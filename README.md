@@ -22,7 +22,7 @@ database:
 # ----
 
 from pathlib import Path
-from samesyslib.io_functions import load_config
+from samesyslib.utils import load_config
 
 config_path = Path("/opt/settings/config.yml")
 conf = load_config(config_path)
