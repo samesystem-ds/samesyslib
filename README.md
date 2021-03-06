@@ -38,9 +38,12 @@ The latest stable version can always be installed or updated via pip:
 pip install samesyslib
 ```
 
-#### Running Tests
+#### Test Coverage
 
-#### Coverage
+```bash
+pip install pytest-cov
+python -m pytest --cov=samesyslib tests
+```
 
 #### Development Version
 
@@ -53,4 +56,4 @@ pip install git+https://github.com/samesystem-ds/samesyslib.git
 #### License
 
 Code and documentation are available according to the MIT License
-(see [LICENSE](https://github.com/samesystem-ds/samesyslib/blob/master/LICENSE) ).
+(see [LICENSE](https://github.com/samesystem-ds/samesyslib/blob/master/LICENSE)).
