@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.0.1",
     author="SameSystem",
     author_email="giedrius.blazys@samesystem.com",
-    description="Common libs used by SameSystem Data Science team",
+    description="Common libs used by SameSystem Data Science team.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/samesystem-ds/samesyslib",
