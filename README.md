@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/gh/samesystem-ds/samesyslib/branch/master/graph/badge.svg?token=W6fJRyzkU2)](https://codecov.io/gh/samesystem-ds/samesyslib)
 ![PyPI](https://img.shields.io/pypi/v/samesyslib)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/samesyslib)
+![GitHub](https://img.shields.io/github/license/samesystem-ds/samesyslib)
 
 [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
 [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
