@@ -14,7 +14,7 @@ Common libs used by SameSystem Data Science team.
 
 #### Example Usage
 
-----
+```python
 # /opt/settings/config.yml
 database:
   user: 'root'
@@ -27,15 +27,15 @@ config_path = Path("/opt/settings/config.yml")
 conf = load_config(config_path)
 
 conf['database']['user']
-----
+```
 
 #### Install
 
 The latest stable version can always be installed or updated via pip:
 
-----
+```python
 pip install samesyslib
-----
+```
 
 #### Running Tests
 
@@ -45,9 +45,9 @@ pip install samesyslib
 
 The latest development version can be installed directly from GitHub:
 
-----
+```python
 pip install git+https://github.com/samesystem-ds/samesyslib.git
-----
+```
  
 #### License
 
