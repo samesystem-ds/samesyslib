@@ -1,4 +1,5 @@
 import sys
+import io
 from pathlib import Path
 from typing import Set, Dict, Union
 
@@ -6,7 +7,6 @@ ConfigType = Dict[str, Dict[str, Union[str, int]]]
 
 def load_config(config_path: Union[str, Path]) -> ConfigType:
     from ruamel import yaml
-    import io
     '''Safely load yaml type configurations
     
     Examples
