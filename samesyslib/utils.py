@@ -6,7 +6,6 @@ from typing import Set, Dict, Union
 ConfigType = Dict[str, Dict[str, Union[str, int]]]
 
 def load_config(config_path: Union[str, Path]) -> ConfigType:
-    from ruamel import yaml
     '''Safely load yaml type configurations
     
     Examples
@@ -14,6 +13,7 @@ def load_config(config_path: Union[str, Path]) -> ConfigType:
     config_path = Path("/opt/settings/config.yml")
     conf = load_config(config_path)
     '''
+    from ruamel import yaml
     with io.open(file=config_path, mode="rt") as config_file:
         return yaml.safe_load(config_file)
 
