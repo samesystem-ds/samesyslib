@@ -11,6 +11,12 @@ logging.basicConfig(level=logging.INFO)
 
 
 def timing(f):
+    '''
+    add documentation here
+
+    Examples:
+        >>> add examples
+    '''
     @wraps(f)
     def wrapper(*args, **kwargs):
         verbose = True
