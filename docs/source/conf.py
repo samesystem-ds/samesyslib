@@ -40,6 +40,8 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
+    'rinoh.frontend.sphinx',
+    'recommonmark',
     'sphinxcontrib.confluencebuilder'
 ]
 
@@ -63,7 +65,7 @@ confluence_space_name = conf['ds']['space_name']
 confluence_server_url = conf['ds']['server_url']
 confluence_server_user = conf['ds']['server_user']
 confluence_server_pass = conf['ds']['server_pass']
-confluence_parent_page = conf['ds']['parent_page']
+#confluence_parent_page = conf['ds']['parent_page']
 
 confluence_publish = True
 confluence_page_hierarchy = True
@@ -78,6 +80,7 @@ exclude_patterns = [
     '_build',
     '.DS_Store',
     'Thumbs.db',
+    'global.rst'
 ]
 
 

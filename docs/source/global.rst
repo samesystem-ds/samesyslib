@@ -1,0 +1,2 @@
+.. |doctest| replace:: :mod:`doctest`
+
