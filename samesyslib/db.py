@@ -19,7 +19,7 @@ def timing(f):
     '''
     @wraps(f)
     def wrapper(*args, **kwargs):
-        verbose = True
+        verbose = False
         if kwargs is not None:
             if 'timing_verbose' in kwargs.keys():
                 verbose = kwargs['timing_verbose']
@@ -43,12 +43,12 @@ class POptimiseDataTypesMixin:
 
     @timing
     def optimize_pandas_datatypes(self, data:pd.DataFrame, **kwargs: dict) -> pd.DataFrame:
-        verbose = True
+        verbose = False
         if kwargs is not None:
             if 'optimize_verbose' in kwargs.keys():
                 verbose = kwargs['optimize_verbose']
-
-        logging.info('OPTIMIZING PANDAS DATAFRAMES DATATYPES')
+        if verbose:
+            logging.info('OPTIMIZING PANDAS DATAFRAMES DATATYPES')
         memory_before = self.mem_usage(data)
         result = data.select_dtypes(include=['int']).apply(pd.to_numeric, downcast='unsigned')
         data[result.columns] = result
@@ -74,6 +74,12 @@ class DB(POptimiseDataTypesMixin):
 
     @timing
     def get(self, query: str=None, **kwargs: dict) -> pd.DataFrame:
+        verbose = False
+        if kwargs is not None:
+            if 'verbose' in kwargs.keys():
+                verbose = kwargs['verbose']
+        if verbose:
+            logging.info(query)
         return self.optimize_pandas_datatypes(pd.read_sql_query(query, self.engine), **kwargs)
 
     @timing
