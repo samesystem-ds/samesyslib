@@ -80,7 +80,10 @@ class DB(POptimiseDataTypesMixin):
                 verbose = kwargs['verbose']
         if verbose:
             logging.info(query)
-        return self.optimize_pandas_datatypes(pd.read_sql_query(query, self.engine), **kwargs)
+        df = self.optimize_pandas_datatypes(pd.read_sql_query(query, self.engine), **kwargs)
+        if verbose:
+            logging.info(f"Returned table shape: {df.shape}")
+        return df
 
     @timing
     def send_single(
@@ -103,7 +106,7 @@ class DB(POptimiseDataTypesMixin):
             logging.info(
                 f"""
                 Executing query:
-                {query}
+                {sql}
                 """
             )
 
@@ -116,7 +119,11 @@ class DB(POptimiseDataTypesMixin):
 
     @timing
     def send_append(self, pdf:pd.DataFrame, table:str = None, schema: str = None, **kwargs) -> str:
-        
+        verbose = False
+        if kwargs is not None:
+            if 'verbose' in kwargs.keys():
+                verbose = kwargs['verbose']
+
         table_name = table
         if schema is None:
             schema = self.params['schema']
@@ -181,7 +188,7 @@ class DB(POptimiseDataTypesMixin):
                     create_stmt = pd.io.sql.get_schema(pdf, table+tmp_prefix, con=self.engine)
                     if verbose:
                         logging.info(create_stmt)
-                    conn.execute(query)
+                    conn.execute(create_stmt)
 
                     load_stmt = f"""
                     LOAD DATA LOCAL INFILE '{tf.name}' 
