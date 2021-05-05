@@ -2,10 +2,10 @@ import json
 from functools import wraps
 from time import time
 import logging
-from sqlalchemy import create_engine
-import pandas as pd
-from pandas import isnull
 import tempfile
+
+from sqlalchemy import create_engine, engine
+import pandas as pd
 
 logging.basicConfig(level=logging.INFO)
 
@@ -61,16 +61,29 @@ class POptimiseDataTypesMixin:
         return data
 
 class DB(POptimiseDataTypesMixin):
-    def __init__(self, connection_parms: str) -> None:
-        self.params = json.loads(connection_parms)
-        if not self.params:
-            raise Exception('DB connection params not provided')
+    def __init__(self, connection_parms, conn=None):
+        if type(conn) is engine.Engine:
+            self.engine = conn
+        else:
+            self.params = json.loads(connection_parms)
+            if not self.params:
+                raise Exception('DB connection params not provided')
 
-        self.engine = create_engine(
-            "mysql://{}:{}@{}:{}/{}?charset=utf8mb4&local_infile=1".format(
-                self.params['login'], self.params['password'], self.params['host'], self.params['port'], self.params['schema']
-            ), pool_pre_ping=True
-        )
+            self.engine = create_engine(
+                f"mysql://{self.params['login']}:"
+                f"{self.params['password']}@"
+                f"{self.params['host']}"\
+                f":{self.params['port']}/"
+                f"{self.params['schema']}?charset=utf8mb4&local_infile=1"
+                , pool_pre_ping=True
+            )
+        self._check_local_infile()
+
+    def _check_local_infile(self):
+        SQL = "SHOW GLOBAL VARIABLES LIKE 'local_infile';"
+        result = self.engine.execute(SQL).fetchone()
+        assert result[0] == 'local_infile', 'Check For local_infile value'
+        assert result[1] == 'ON', '[CL ERROR] local_infile value IS OFF'
 
     @timing
     def get(self, query: str=None, **kwargs: dict) -> pd.DataFrame:
@@ -79,7 +92,7 @@ class DB(POptimiseDataTypesMixin):
             if 'verbose' in kwargs.keys():
                 verbose = kwargs['verbose']
         if verbose:
-            logging.info(query)
+            logging.info(f"Executing query:\n{query}")
         df = self.optimize_pandas_datatypes(pd.read_sql_query(query, self.engine), **kwargs)
         if verbose:
             logging.info(f"Returned table shape: {df.shape}")
@@ -103,18 +116,18 @@ class DB(POptimiseDataTypesMixin):
                 verbose = kwargs['verbose']
 
         if verbose:
-            logging.info(
-                f"""
-                Executing query:
-                {sql}
-                """
-            )
+            logging.info(f"""Executing query:\n{sql}""")
 
         result =  self.engine.execute(sql)
         if verbose:
             logging.info(f"Inserted rows:{result.rowcount}")
         
         return result
+
+    @timing
+    def run(self, sql, **kwargs):
+        with self.engine.begin() as conn:
+            conn.execute(sql)
 
 
     @timing
@@ -135,7 +148,7 @@ class DB(POptimiseDataTypesMixin):
                 if not conn.execute(f'show tables like "{table_name}"'):
                     create_stmt = pd.io.sql.get_schema(pdf, table_name, con=self.engine)
                     if verbose:
-                        logging.info(create_stmt)
+                        logging.info(f"Executing query:\n{create_stmt}")
                     conn.execute(create_stmt)
     
                 with tempfile.NamedTemporaryFile() as tf:
@@ -148,7 +161,7 @@ class DB(POptimiseDataTypesMixin):
                     IGNORE 1 LINES;
                     """
                     if verbose:
-                        logging.info(load_stmt)
+                        logging.info(f"Executing query:\n{load_stmt}")
                     rows = conn.execute(load_stmt)
 
                 logging.info(f'Successfully loaded csv into table {schema}.{table} {rows.rowcount} rows.')
@@ -179,7 +192,7 @@ class DB(POptimiseDataTypesMixin):
             with self.engine.connect() as conn:
                 query = f"DROP TABLE IF EXISTS {schema}.{table}, {schema}.{table + tmp_prefix};"
                 if verbose:
-                    logging.info(query)
+                    logging.info(f"Executing query:\n{query}")
                 conn.execute(query)
                 with tempfile.NamedTemporaryFile() as tf:
                     pdf.to_csv(tf.name, encoding='utf-8', header=True, chunksize=300000, \
@@ -187,7 +200,7 @@ class DB(POptimiseDataTypesMixin):
                     conn.execute(f"USE {schema};")
                     create_stmt = pd.io.sql.get_schema(pdf, table+tmp_prefix, con=self.engine)
                     if verbose:
-                        logging.info(create_stmt)
+                        logging.info(f"Executing query:\n{create_stmt}")
                     conn.execute(create_stmt)
 
                     load_stmt = f"""
@@ -196,7 +209,7 @@ class DB(POptimiseDataTypesMixin):
                     FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES;
                     """
                     if verbose:
-                        logging.info(load_stmt)
+                        logging.info(f"Executing query:\n{load_stmt}")
                     rows = conn.execute(load_stmt)
                     conn.execute(f"RENAME TABLE {schema}.{table + tmp_prefix} TO {schema}.{table};")
             logging.info(f'Succuessfully loaded csv into table {schema}.{table} {rows.rowcount} rows.')
