@@ -1,14 +1,18 @@
-import sys
+# Standard library imports
+import bz2
 import io
-from pathlib import Path
-from typing import Set, Dict, Union, List
+import json
 import logging
 import os
-from subprocess import check_output, STDOUT
-import bz2
 import pickle
+from typing import Set, Dict, Union, List
+import sys
+from subprocess import check_output, STDOUT
 
+# Third party imports
 import numpy as np
+import pandas as pd
+from pathlib import Path
 
 ConfigType = Dict[str, Dict[str, Union[str, int]]]
 
@@ -152,3 +156,30 @@ def read_batched_shops_data(conn:object, batch:list, table_schema:str, table_nam
         WHERE shop_id in ({shops});
         """
     )
+
+def preprocess_activities(shop_data:pd.DataFrame, activities_column:str='occasion_type_id', prefix:str='event_'):
+    """
+    Function to tranform activities in v1_daily_feature/v1_daily_future_features stored as list
+    into dummy variables used in xgboost model.
+    """
+    activities = pd.get_dummies(shop_data.set_index('date')\
+        [activities_column].apply(lambda x: json.loads(x) if pd.notnull(x) else None).explode())
+    #rename columns
+    activities.columns = [prefix+str(col) for col in activities.columns]
+    # remove duplicated rows
+    activities = activities.groupby(activities.index).agg('max')
+
+    if activities.columns.size > 0:
+        dt_col = []
+        for col in activities.columns:
+
+            grouper = (activities[col]==0).cumsum()
+
+            cum_val = activities[[col]].groupby( grouper ).cumsum()
+            cum_val['grouper'] = grouper
+
+            cum_val = cum_val.join(cum_val.groupby('grouper')[col].agg(max_value=('max')), on=['grouper'], how='left').drop('grouper', axis=1)
+            cum_val[col] = (cum_val[col]/cum_val['max_value'])
+            dt_col.append(cum_val[[col]])
+        activities = pd.concat(dt_col, axis=1).fillna(0)
+    return activities
