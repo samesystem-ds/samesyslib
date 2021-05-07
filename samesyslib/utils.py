@@ -183,3 +183,73 @@ def preprocess_activities(shop_data:pd.DataFrame, activities_column:str='occasio
             dt_col.append(cum_val[[col]])
         activities = pd.concat(dt_col, axis=1).fillna(0)
     return activities
+
+
+def join_shops_for_query(tbl:pd.Series) -> str:
+    return ', '.join([str(x) for x in list(tbl.unique())])
+
+
+def reduce_intersecting_shops(d:dict) -> set:
+    return reduce(set.intersection, (set(val.index) for val in d.values()))
+
+
+def join_coordinates(tbl:pd.DataFrame) -> pd.Series:
+    return tbl.latitude.astype(str) + ", " + tbl.longitude.astype(str)
+
+
+def remove_special_char(my_str:str, replace_ws:bool=False, escape_punct:bool=True) -> str:
+    if isinstance(my_str, float):
+        my_str = str(my_str)
+    my_str = unidecode(my_str)
+    if escape_punct:
+        chars = re.escape(string.punctuation)
+        my_str = re.sub(r'['+chars+']', '',my_str)
+    my_str = re.sub('  ', ' ',my_str)
+    if replace_ws:
+        my_str = re.sub(' ', '\\\s?',my_str)
+    return my_str.lower()
+
+
+def list_to_dict(category_list:list) -> dict:
+    return dict(zip([category_list], [1]))
+
+
+def estimate_similarity(df:pd.DataFrame, fill_na:bool=False):
+    """Estimates similarity matrix according to euclidean distance.
+     The result is scaled to 0-1.
+     Argument provided whether to fill NA's as 0's.
+    """
+    df = df.reset_index(level=0)
+    if fill_na:
+        df = df.fillna(0)
+    df = df.set_index('shop_id')
+    if 'index' in df.columns:
+        df = df.drop(columns=['index'])
+    shop_index = df.index.values
+    x = df.to_numpy(copy=True)
+    dist = nan_euclidean_distances(x, x)
+    max_dist = np.nanmax(dist)
+    sim = (max_dist-dist)/max_dist
+    return sim, shop_index
+
+
+def cartesian_product(left:pd.DataFrame, right:pd.DataFrame):
+    return left.assign(key=1).merge(right.assign(key=1), on='key').drop('key', 1)
+
+
+def filter_rows_and_cols(df:pd.DataFrame, filter_list:list):
+    """Filtering both rows and cols by provided name list.
+    """
+    return df.loc[df.index.isin(filter_list),
+                  df.columns.astype(int).isin(filter_list)]
+
+
+def percentile(n:int):
+    """Percentile function that can be passed to pandas agg() function
+    AND changes column name.
+    """
+    def percentile_(x):
+        return x.quantile(n)
+    percentile_.__name__ = 'q%s' % n
+    return percentile_
+
