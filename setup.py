@@ -5,13 +5,13 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="samesyslib",
-    version="0.0.14",
+    version="0.0.12",
     author="SameSystem",
     author_email="giedrius.blazys@samesystem.com",
     description="Common libs used by SameSystem Data Science team.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/samesystem-ds/samesyslib",
+    url="https://github.com/samesystem-ds/samesyslib_python_package,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
