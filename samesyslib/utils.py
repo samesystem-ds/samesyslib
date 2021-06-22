@@ -88,7 +88,7 @@ def dataset_summary(df):
     return df_s
 
 
-def mysql_engine(params:
+def mysql_engine(params):
     from sqlalchemy import create_engine
     '''
     Automatically setup appropriate connection string for MySQL based
