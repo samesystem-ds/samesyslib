@@ -91,6 +91,10 @@ def dataset_summary(df):
 
 
 def mysql_engine(params:Dict):
+    '''
+    Automatically setup appropriate connection string for MySQL based
+    on params dictionary.
+    '''
     connection_string = "mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8mb4".format(
                 params['login'], params['password'], params['host'], params['port'], params['schema']
             )
