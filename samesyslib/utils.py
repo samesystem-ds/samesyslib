@@ -14,8 +14,6 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from sqlalchemy import create_engine
-
 ConfigType = Dict[str, Dict[str, Union[str, int]]]
 
 def load_config(config_path: Union[str, Path]) -> ConfigType:
@@ -90,7 +88,8 @@ def dataset_summary(df):
     return df_s
 
 
-def mysql_engine(params:Dict):
+def mysql_engine(params:
+    from sqlalchemy import create_engine
     '''
     Automatically setup appropriate connection string for MySQL based
     on params dictionary.
