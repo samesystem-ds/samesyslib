@@ -2,10 +2,10 @@ import json
 from functools import wraps
 from time import time
 import logging
-from sqlalchemy import create_engine
-import pandas as pd
-from pandas import isnull
 import tempfile
+
+from sqlalchemy import create_engine, engine
+import pandas as pd
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,7 +19,7 @@ def timing(f):
     '''
     @wraps(f)
     def wrapper(*args, **kwargs):
-        verbose = True
+        verbose = False
         if kwargs is not None:
             if 'timing_verbose' in kwargs.keys():
                 verbose = kwargs['timing_verbose']
@@ -33,7 +33,7 @@ def timing(f):
 
 
 class POptimiseDataTypesMixin:
-    def mem_usage(self, pandas_obj, **kwargs):
+    def mem_usage(self, pandas_obj:pd.DataFrame, **kwargs:dict) -> str:
         if isinstance(pandas_obj,pd.DataFrame):
             usage_b = pandas_obj.memory_usage(deep=True).sum()
         else: # we assume if not a df it's a series
@@ -42,13 +42,13 @@ class POptimiseDataTypesMixin:
         return "{:03.2f} MB".format(usage_mb)
 
     @timing
-    def optimize_pandas_datatypes(self, data, **kwargs):
-        verbose = True
+    def optimize_pandas_datatypes(self, data:pd.DataFrame, **kwargs: dict) -> pd.DataFrame:
+        verbose = False
         if kwargs is not None:
             if 'optimize_verbose' in kwargs.keys():
                 verbose = kwargs['optimize_verbose']
-
-        logging.info('OPTIMISING PANDAS DATAFRAMES DATATYPES')
+        if verbose:
+            logging.info('OPTIMIZING PANDAS DATAFRAMES DATATYPES')
         memory_before = self.mem_usage(data)
         result = data.select_dtypes(include=['int']).apply(pd.to_numeric, downcast='unsigned')
         data[result.columns] = result
@@ -56,38 +56,52 @@ class POptimiseDataTypesMixin:
         result = data.select_dtypes(include=['float']).apply(pd.to_numeric, downcast='float')
         data[result.columns] = result
 
-        # if 'date' in data.columns:
-        #     data['date'] = pd.to_datetime(data.date, format='%Y-%m-%d %H:%m:%s', errors='coerce')
-
-        # open_shops exclude for category optimise
-        # gl_obj = data.select_dtypes(include=['object']).copy()
-        # for col in gl_obj.columns:
-        #     num_unique_values = len(gl_obj[col].unique())
-        #     num_total_values = len(gl_obj[col])
-        #     if num_unique_values / num_total_values < 0.5:
-        #         data.loc[:,col] = gl_obj[col].astype('category')
         if verbose:
-            logging.info('RAM usage before/after optimisation: {} / {}'.format(memory_before, self.mem_usage(data)))
+            logging.info('RAM usage before/after optimization: {} / {}'.format(memory_before, self.mem_usage(data)))
         return data
 
 class DB(POptimiseDataTypesMixin):
-    def __init__(self, connection_parms):
-        self.params = json.loads(connection_parms)
-        if not self.params:
-            raise Exception('DB connection params not provided')
+    def __init__(self, connection_parms, conn=None):
+        if type(conn) is engine.Engine:
+            self.engine = conn
+        else:
+            self.params = json.loads(connection_parms)
+            if not self.params:
+                raise Exception('DB connection params not provided')
 
-        self.engine = create_engine(
-            "mysql://{}:{}@{}:{}/{}?charset=utf8mb4&local_infile=1".format(
-                self.params['login'], self.params['password'], self.params['host'], self.params['port'], self.params['schema']
-            ), pool_pre_ping=True
-        )
+            self.engine = create_engine(
+                f"mysql://{self.params['login']}:"
+                f"{self.params['password']}@"
+                f"{self.params['host']}"\
+                f":{self.params['port']}/"
+                f"{self.params['schema']}?charset=utf8mb4&local_infile=1"
+                , pool_pre_ping=True
+            )
+        self._check_local_infile()
+
+    def _check_local_infile(self):
+        SQL = "SHOW GLOBAL VARIABLES LIKE 'local_infile';"
+        result = self.engine.execute(SQL).fetchone()
+        assert result[0] == 'local_infile', 'Check For local_infile value'
+        assert result[1] == 'ON', '[CL ERROR] local_infile value IS OFF'
 
     @timing
-    def get(self, query=None, **kwargs):
-        return self.optimize_pandas_datatypes(pd.read_sql_query(query, self.engine), **kwargs)
+    def get(self, query: str=None, **kwargs: dict) -> pd.DataFrame:
+        verbose = False
+        if kwargs is not None:
+            if 'verbose' in kwargs.keys():
+                verbose = kwargs['verbose']
+        if verbose:
+            logging.info(f"Executing query:\n{query}")
+        df = self.optimize_pandas_datatypes(pd.read_sql_query(query, self.engine), **kwargs)
+        if verbose:
+            logging.info(f"Returned table shape: {df.shape}")
+        return df
 
     @timing
-    def send_single(self, pdf, table=None, chunksize=10000, if_exists='replace', index=False, method='multi', **kwargs):
+    def send_single(
+        self, pdf:pd.DataFrame, table:str=None, chunksize:int=10000, 
+        if_exists:str='replace', index:bool=False, method:str='multi', **kwargs:dict) -> pd.DataFrame:
         try:
             pdf.to_sql(table, self.engine, chunksize=chunksize, if_exists=if_exists, index=index, method=method)
         except Exception as e:
@@ -95,96 +109,112 @@ class DB(POptimiseDataTypesMixin):
         return table
 
     @timing
-    def execute(self, sql, **kwargs):
-        return self.engine.execute(sql)
+    def execute(self, sql: str, **kwargs: dict):
+        verbose = False
+        if kwargs is not None:
+            if 'verbose' in kwargs.keys():
+                verbose = kwargs['verbose']
+
+        if verbose:
+            logging.info(f"""Executing query:\n{sql}""")
+
+        result =  self.engine.execute(sql)
+        if verbose:
+            logging.info(f"Inserted rows:{result.rowcount}")
+        
+        return result
 
     @timing
-    def send_append(self, pdf, table=None, schema=None, **kwargs):
+    def run(self, sql, **kwargs):
+        with self.engine.begin() as conn:
+            conn.execute(sql)
+
+
+    @timing
+    def send_append(self, pdf:pd.DataFrame, table:str = None, schema: str = None, **kwargs) -> str:
+        verbose = False
+        if kwargs is not None:
+            if 'verbose' in kwargs.keys():
+                verbose = kwargs['verbose']
+
         table_name = table
         if schema is None:
             schema = self.params['schema']
 
         try:
-            tf = tempfile.NamedTemporaryFile()
+            with self.engine.connect() as conn:
+                conn.execute(f"USE {schema}")
 
-            connection = self.engine.raw_connection()
-            cursor = connection.cursor()
+                if not conn.execute(f'show tables like "{table_name}"'):
+                    create_stmt = pd.io.sql.get_schema(pdf, table_name, con=self.engine)
+                    if verbose:
+                        logging.info(f"Executing query:\n{create_stmt}")
+                    conn.execute(create_stmt)
+    
+                with tempfile.NamedTemporaryFile() as tf:
+                    pdf.to_csv(tf.name, encoding='utf-8', header=True, \
+                                doublequote=True, sep=',', index=False, na_rep='NULL')
 
-            cursor.execute("USE {}".format(schema))
+                    load_stmt = f"""
+                    LOAD DATA LOCAL INFILE '{tf.name}' 
+                    INTO TABLE {schema}.{table_name} FIELDS TERMINATED BY ',' ENCLOSED BY '\"' 
+                    IGNORE 1 LINES;
+                    """
+                    if verbose:
+                        logging.info(f"Executing query:\n{load_stmt}")
+                    rows = conn.execute(load_stmt)
 
-            if not cursor.execute('show tables like "{}"'.format(table_name)):
-                create_stmt = "{}".format(pd.io.sql.get_schema(pdf, table_name, con=self.engine))
-                cursor.execute(create_stmt)
-            connection.commit()
-
-            pdf.to_csv(tf.name, encoding='utf-8', header=True, \
-                        doublequote=True, sep=',', index=False, na_rep='NULL')
-
-            load_stmt = "LOAD DATA LOCAL INFILE '{}' INTO TABLE {}.{} FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES;".format(tf.name, schema, table_name)
-            rows = cursor.execute(load_stmt)
-            connection.commit()
-
-            tf.close()
-            logging.info('Succuessfully loaded csv into table {}.{} {} rows.'.format(schema, table, rows))
+                logging.info(f'Successfully loaded csv into table {schema}.{table} {rows.rowcount} rows.')
 
         except Exception as e:
-            logging.error('SQL EXCEPTION: {}'.format(str(e)))
+            logging.error(f'SQL EXCEPTION: {str(e)}')
 
-        finally:
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
-            if tf:
-                tf.close()
+        return f"{schema}.{table}"
 
-        return "{}.{}".format(schema, table)
 
     @timing
-    def send(self, pdf, table=None, schema=None, if_exists='replace', index=False, **kwargs):
+    def send(
+        self, pdf: pd.DataFrame, table: str=None, schema:str=None, 
+        if_exists:str='replace', index:bool=False, **kwargs:dict) -> str:
         if if_exists != 'replace':
             return self.send_append(pdf, table=table, if_exists=if_exists, index=index, **kwargs)
+        
+        verbose = False
+        if kwargs is not None:
+            if 'verbose' in kwargs.keys():
+                verbose = kwargs['verbose']
 
         tmp_prefix='_tmp'
         if schema is None:
             schema = self.params['schema']
 
         try:
-            tf = tempfile.NamedTemporaryFile()
+            with self.engine.connect() as conn:
+                query = f"DROP TABLE IF EXISTS {schema}.{table}, {schema}.{table + tmp_prefix};"
+                if verbose:
+                    logging.info(f"Executing query:\n{query}")
+                conn.execute(query)
+                with tempfile.NamedTemporaryFile() as tf:
+                    pdf.to_csv(tf.name, encoding='utf-8', header=True, chunksize=300000, \
+                                doublequote=True, sep=',', index=False, na_rep='NULL')
+                    conn.execute(f"USE {schema};")
+                    create_stmt = pd.io.sql.get_schema(pdf, table+tmp_prefix, con=self.engine)
+                    if verbose:
+                        logging.info(f"Executing query:\n{create_stmt}")
+                    conn.execute(create_stmt)
 
-            connection = self.engine.raw_connection()
-            cursor = connection.cursor()
-
-
-            cursor.execute("DROP TABLE IF EXISTS {}.{}, {}.{};".format(schema, table, schema, table + tmp_prefix))
-            connection.commit()
-
-            pdf.to_csv(tf.name, encoding='utf-8', header=True, chunksize=300000, \
-                        doublequote=True, sep=',', index=False, na_rep='NULL')
-
-            cursor.execute("USE {}".format(schema))
-            create_stmt = "{}".format(pd.io.sql.get_schema(pdf, table+tmp_prefix, con=self.engine))
-            cursor.execute(create_stmt)
-
-            load_stmt = "LOAD DATA LOCAL INFILE '{}' INTO TABLE {}.{} FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES;".format(tf.name, schema, table+tmp_prefix)
-            rows = cursor.execute(load_stmt)
-            cursor.execute("RENAME TABLE {}.{} TO {}.{};".format(schema, table + tmp_prefix,schema, table))
-
-            connection.commit()
-
-            tf.close()
-            cursor.close()
-            logging.info('Succuessfully loaded csv into table {}.{} {} rows.'.format(schema, table, rows))
+                    load_stmt = f"""
+                    LOAD DATA LOCAL INFILE '{tf.name}' 
+                    INTO TABLE {schema}.{table+tmp_prefix} 
+                    FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES;
+                    """
+                    if verbose:
+                        logging.info(f"Executing query:\n{load_stmt}")
+                    rows = conn.execute(load_stmt)
+                    conn.execute(f"RENAME TABLE {schema}.{table + tmp_prefix} TO {schema}.{table};")
+            logging.info(f'Succuessfully loaded csv into table {schema}.{table} {rows.rowcount} rows.')
 
         except Exception as e:
-            logging.error('SQL EXCEPTION: {}'.format(str(e)))
+            logging.error(f'SQL EXCEPTION: {str(e)}')
 
-        finally:
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
-            if tf:
-                tf.close()
-
-        return "{}.{}".format(schema, table)
+        return f"{schema}.{table}"

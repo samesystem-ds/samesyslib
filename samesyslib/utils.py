@@ -1,7 +1,18 @@
-import sys
+# Standard library imports
+import bz2
 import io
-from pathlib import Path
+import json
+import logging
+import os
+import pickle
 from typing import Set, Dict, Union, List
+import sys
+from subprocess import check_output, STDOUT
+
+# Third party imports
+import numpy as np
+import pandas as pd
+from pathlib import Path
 
 from sqlalchemy import create_engine
 
@@ -84,3 +95,174 @@ def mysql_engine(params:Dict):
                 params['login'], params['password'], params['host'], params['port'], params['schema']
             )
     return create_engine(connection_string, pool_pre_ping=True)
+
+
+def get_git_info(repo_dir:str) -> dict:
+    """
+    Extract basic git info from CWD
+    example:
+        repo_dir = os.path.dirname(os.path.realpath(__file__))
+    """
+    branch = check_output(f"cd {repo_dir};\
+                            git rev-parse --abbrev-ref HEAD",
+                            shell=True,stderr=STDOUT).decode("utf8").rstrip()
+    commit = check_output(f"cd {repo_dir};\
+                            git rev-parse --short HEAD",
+                            shell=True,stderr=STDOUT).decode("utf8").rstrip()
+    return {'branch':branch, 'commit':commit}
+
+
+def init_metadata(conn:object, table_name: str=None, schema:str=None, metadata: dict=None) -> None:
+    """
+    Write dictionary into DB table, initializing only passed keys, rest leaving as default/Null
+    """
+    table_structure = conn.get(
+        f"""
+        SELECT * FROM {schema}.{table_name} limit 0;
+        """
+    )
+    for key in metadata.keys():
+        table_structure.loc[0, key] = metadata[key]
+    conn.send_append(table_structure, table_name, schema=schema)
+
+def update_model_metadata(conn:object, run_id:str, key:str, value:object,
+ run_id_col:str = None, table_name:str=None, table_schema:str = None) -> None:
+    conn.execute(
+        f"""
+        UPDATE `{table_schema}`.`{table_name}`
+        SET {key} = '{value}'
+        WHERE {run_id_col} = '{run_id}'
+        """, 
+        verbose = True
+    )
+
+
+def split_array_into_batches(shop_list:object, batch_size: int):
+    if shop_list.shape[0] > batch_size:
+        return np.array_split(shop_list.values, np.ceil(shop_list.shape[0]/batch_size))
+    else:
+        return np.array_split(shop_list.values, 1)
+
+
+def save_bzipped(obj: object, filename: object, protocol: int=-1):
+    """
+    Save python object into pickle and compress it
+    """
+    with bz2.BZ2File(filename, 'wb') as f:
+        pickle.dump(obj, f, protocol)
+
+
+def load_bzipped(data:object):
+    """
+    Reverse save_bzipped operation
+    """
+    return pickle.loads(bz2.decompress(data))
+
+
+def read_batched_shops_data(conn:object, batch:list, table_schema:str, table_name:str):
+    shops = ','.join(batch.astype(str)) 
+    return conn.get(
+        f"""
+        SELECT *
+        FROM {table_schema}.{table_name}
+        WHERE shop_id in ({shops});
+        """
+    )
+
+
+def preprocess_activities(shop_data:pd.DataFrame, activities_column:str='occasion_type_id', prefix:str='event_'):
+    """
+    Function to tranform activities in v1_daily_feature/v1_daily_future_features stored as list
+    into dummy variables used in xgboost model.
+    """
+    activities = pd.get_dummies(shop_data.set_index('date')\
+        [activities_column].apply(lambda x: json.loads(x) if pd.notnull(x) else None).explode())
+    #rename columns
+    activities.columns = [prefix+str(col) for col in activities.columns]
+    # remove duplicated rows
+    activities = activities.groupby(activities.index).agg('max')
+
+    if activities.columns.size > 0:
+        dt_col = []
+        for col in activities.columns:
+
+            grouper = (activities[col]==0).cumsum()
+
+            cum_val = activities[[col]].groupby( grouper ).cumsum()
+            cum_val['grouper'] = grouper
+
+            cum_val = cum_val.join(cum_val.groupby('grouper')[col].agg(max_value=('max')), on=['grouper'], how='left').drop('grouper', axis=1)
+            cum_val[col] = (cum_val[col]/cum_val['max_value'])
+            dt_col.append(cum_val[[col]])
+        activities = pd.concat(dt_col, axis=1).fillna(0)
+    return activities
+
+
+def join_shops_for_query(tbl:pd.Series) -> str:
+    return ', '.join([str(x) for x in list(tbl.unique())])
+
+
+def reduce_intersecting_shops(d:dict) -> set:
+    return reduce(set.intersection, (set(val.index) for val in d.values()))
+
+
+def join_coordinates(tbl:pd.DataFrame) -> pd.Series:
+    return tbl.latitude.astype(str) + ", " + tbl.longitude.astype(str)
+
+
+def remove_special_char(my_str:str, replace_ws:bool=False, escape_punct:bool=True) -> str:
+    if isinstance(my_str, float):
+        my_str = str(my_str)
+    my_str = unidecode(my_str)
+    if escape_punct:
+        chars = re.escape(string.punctuation)
+        my_str = re.sub(r'['+chars+']', '',my_str)
+    my_str = re.sub('  ', ' ',my_str)
+    if replace_ws:
+        my_str = re.sub(' ', '\\\s?',my_str)
+    return my_str.lower()
+
+
+def list_to_dict(category_list:list) -> dict:
+    return dict(zip([category_list], [1]))
+
+
+def estimate_similarity(df:pd.DataFrame, fill_na:bool=False):
+    """Estimates similarity matrix according to euclidean distance.
+     The result is scaled to 0-1.
+     Argument provided whether to fill NA's as 0's.
+    """
+    df = df.reset_index(level=0)
+    if fill_na:
+        df = df.fillna(0)
+    df = df.set_index('shop_id')
+    if 'index' in df.columns:
+        df = df.drop(columns=['index'])
+    shop_index = df.index.values
+    x = df.to_numpy(copy=True)
+    dist = nan_euclidean_distances(x, x)
+    max_dist = np.nanmax(dist)
+    sim = (max_dist-dist)/max_dist
+    return sim, shop_index
+
+
+def cartesian_product(left:pd.DataFrame, right:pd.DataFrame):
+    return left.assign(key=1).merge(right.assign(key=1), on='key').drop('key', 1)
+
+
+def filter_rows_and_cols(df:pd.DataFrame, filter_list:list):
+    """Filtering both rows and cols by provided name list.
+    """
+    return df.loc[df.index.isin(filter_list),
+                  df.columns.astype(int).isin(filter_list)]
+
+
+def percentile(n:int):
+    """Percentile function that can be passed to pandas agg() function
+    AND changes column name.
+    """
+    def percentile_(x):
+        return x.quantile(n)
+    percentile_.__name__ = 'q%s' % n
+    return percentile_
+
