@@ -11,7 +11,7 @@ setuptools.setup(
     description="Common libs used by SameSystem Data Science team.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/samesystem-ds/samesyslib_python_package,
+    url="https://github.com/samesystem-ds/samesyslib",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
