@@ -3,6 +3,8 @@ import io
 from pathlib import Path
 from typing import Set, Dict, Union, List
 
+from sqlalchemy import create_engine
+
 ConfigType = Dict[str, Dict[str, Union[str, int]]]
 
 def load_config(config_path: Union[str, Path]) -> ConfigType:
@@ -75,3 +77,10 @@ def dataset_summary(df):
     df_s = df_s.merge(pd.DataFrame(df.std(), columns = ['std']), left_index=True, right_index=True, how = 'outer')
     df_s = df_s.merge(pd.DataFrame(df.isnull().sum(), columns = ['n_miss']), left_index=True, right_index=True, how = 'outer')
     return df_s
+
+
+def mysql_engine(params:Dict):
+    connection_string = "mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8mb4".format(
+                params['login'], params['password'], params['host'], params['port'], params['schema']
+            )
+    return create_engine(connection_string, pool_pre_ping=True)

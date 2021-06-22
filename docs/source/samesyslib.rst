@@ -1,11 +1,7 @@
 samesyslib library
 *******************
 
-.. automodule:: utils
-   :members:
-
-.. automodule:: db
-   :members:
+source: https://github.com/samesystem-ds/samesyslib
 
 Installation
 =============
@@ -37,3 +33,9 @@ Todo:
    https://google.github.io/styleguide/pyguide.html
 
 
+
+.. automodule:: utils
+   :members:
+
+.. automodule:: db
+   :members:
