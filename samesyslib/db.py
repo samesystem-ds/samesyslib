@@ -64,6 +64,10 @@ class DB(POptimiseDataTypesMixin):
     def __init__(self, connection_parms, conn=None):
         if type(conn) is engine.Engine:
             self.engine = conn
+        elif type(connection_parms) is dict:
+            self.params = connection_parms
+            if not self.params:
+                raise Exception('DB connection params not provided')
         else:
             self.params = json.loads(connection_parms)
             if not self.params:
