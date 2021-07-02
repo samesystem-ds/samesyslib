@@ -61,7 +61,7 @@ class POptimiseDataTypesMixin:
         return data
 
 class DB(POptimiseDataTypesMixin):
-    def __init__(self, connection_parms, conn=None):
+    def __init__(self, connection_parms, conn=None, if_pymysql=False):
         if type(conn) is engine.Engine:
             self.engine = conn
         else:
@@ -71,9 +71,12 @@ class DB(POptimiseDataTypesMixin):
                 self.params = json.loads(connection_parms)
             if not self.params:
                 raise Exception('DB connection params not provided')
-
+            if if_pymysql:
+                pymysql = '+pymysql'
+            else:
+                pymysql = ''
             self.engine = create_engine(
-                f"mysql://{self.params['login']}:"
+                f"mysql{pymysql}://{self.params['login']}:"
                 f"{self.params['password']}@"
                 f"{self.params['host']}"\
                 f":{self.params['port']}/"
