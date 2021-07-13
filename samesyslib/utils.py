@@ -162,15 +162,20 @@ def load_bzipped(data:object):
     return pickle.loads(bz2.decompress(data))
 
 
-def read_batched_shops_data(conn:object, batch:list, table_schema:str, table_name:str):
-    shops = ','.join(batch.astype(str)) 
-    return conn.get(
-        f"""
-        SELECT *
-        FROM {table_schema}.{table_name}
-        WHERE shop_id in ({shops});
-        """
-    )
+def read_batched_shops_data(conn:object, batch:list, table_schema:str, table_name:str, run_id_col:str=None, run_id:str=None):
+    shops = ','.join(batch.astype(str))
+    if run_id_col != None:
+        tbl = conn.get(f"""SELECT *
+                           FROM {table_name}
+                           WHERE {run_id_col} = '{run_id}'
+                           AND shop_id in ({shops});
+                        """, optimize_verbose=False, timing_verbose=False)        
+    else:    
+        tbl = conn.get(f"""SELECT *
+                           FROM {table_name}
+                           WHERE shop_id in ({shops});
+                        """, optimize_verbose=False, timing_verbose=False)
+    return tbl
 
 
 def preprocess_activities(shop_data:pd.DataFrame, activities_column:str='occasion_type_id', prefix:str='event_'):
