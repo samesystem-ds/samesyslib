@@ -100,6 +100,18 @@ def mysql_engine(params):
     return create_engine(connection_string, pool_pre_ping=True)
 
 
+def get_data_from_query(sql_dir, table, conn, verbose=True):
+    import time
+    sql_file = Path(sql_dir, f'{table}.sql')
+    query = sql_from_file(sql_file)[0]
+    tic1 = time.perf_counter()
+    df = conn.get(query)
+    toc1 = time.perf_counter()
+    if verbose > 0:
+        print(f'Downloaded [{table}]: {df.shape} in {toc1 - tic1:0.4f} seconds')
+    return df
+
+
 def get_git_info(repo_dir:str) -> dict:
     """
     Extract basic git info from CWD
