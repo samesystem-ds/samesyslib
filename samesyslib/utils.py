@@ -75,16 +75,26 @@ def get_col_types(df, columns=None):
         print(f'{col}: {type(value)}: {value}')
 
 
-def dataset_summary(df):
+def dataset_summary(data, index_summary=True, detail=False, quick=True):
     import pandas as pd
+    if index_summary:
+        df = data.copy()
+        df = df.reset_index()
+    else:
+        df = data
     df_s = pd.DataFrame(df.dtypes, columns = ['type'])
-    df_s = df_s.merge(df.head(1).T, left_index=True, right_index=True, how = 'outer')
-    df_s = df_s.merge(df.tail(1).T, left_index=True, right_index=True, how = 'outer')
-    df_s = df_s.merge(pd.DataFrame(df.min(), columns = ['min']), left_index=True, right_index=True, how = 'outer')
-    df_s = df_s.merge(pd.DataFrame(df.max(), columns = ['max']), left_index=True, right_index=True, how = 'outer')
-    df_s = df_s.merge(pd.DataFrame(df.mean(numeric_only=None), columns = ['mean']), left_index=True, right_index=True, how = 'outer')
-    df_s = df_s.merge(pd.DataFrame(df.std(), columns = ['std']), left_index=True, right_index=True, how = 'outer')
+    if detail:
+        df_s = df_s.merge(df.head(1).T, left_index=True, right_index=True, how = 'outer')
+        df_s = df_s.merge(df.tail(1).T, left_index=True, right_index=True, how = 'outer')
+        df_s = df_s.merge(pd.DataFrame(df.min(), columns = ['min']), left_index=True, right_index=True, how = 'left')
+        df_s = df_s.merge(pd.DataFrame(df.max(), columns = ['max']), left_index=True, right_index=True, how = 'left')
+        df_s.columns = ['type', 'first', 'last', 'min', 'max']
+    if not quick:
+        df_s = df_s.merge(pd.DataFrame(df.mean(numeric_only=None), columns = ['mean']), left_index=True, right_index=True, how = 'outer')
+        df_s = df_s.merge(pd.DataFrame(df.std(), columns = ['std']), left_index=True, right_index=True, how = 'outer')
+    df_s = df_s.merge(pd.DataFrame(df.nunique(), columns = ['n_uniq']), left_index=True, right_index=True, how = 'outer')
     df_s = df_s.merge(pd.DataFrame(df.isnull().sum(), columns = ['n_miss']), left_index=True, right_index=True, how = 'outer')
+    df_s = df_s.merge(pd.DataFrame(df.count(), columns = ['obs']), left_index=True, right_index=True, how = 'outer')
     return df_s
 
 
