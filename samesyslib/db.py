@@ -106,10 +106,11 @@ class DB(POptimiseDataTypesMixin):
 
     @timing
     def send_single(
-        self, pdf:pd.DataFrame, table:str=None, chunksize:int=10000, 
+        self, pdf:pd.DataFrame, table:str=None, chunksize:int=10000, schema:str=None,
         if_exists:str='replace', index:bool=False, method:str='multi', **kwargs:dict) -> pd.DataFrame:
         try:
-            pdf.to_sql(table, self.engine, chunksize=chunksize, if_exists=if_exists, index=index, method=method)
+            pdf.to_sql(table, self.engine, chunksize=chunksize, 
+            if_exists=if_exists, schema=schema, index=index, method=method)
         except Exception as e:
             logging.error('SQL EXCEPTION: {}'.format(str(e)))
         return table
