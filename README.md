@@ -45,6 +45,14 @@ pip install pytest-cov
 python -m pytest --cov=samesyslib tests
 ```
 
+#### Updating
+
+After editing the functions, increment package version number in `setup.py` before pushing to master, so that pypi package can be automatically build. To update installed package:
+
+```python
+pip install samesyslib --upgrade
+```
+
 #### Development Version
 
 The latest development version can be installed directly from GitHub:
