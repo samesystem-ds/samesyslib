@@ -296,3 +296,6 @@ def percentile(n:int):
     percentile_.__name__ = 'q%s' % n
     return percentile_
 
+
+def custom_round(x, base=0.25):
+    return base * round(float(x)/base)
