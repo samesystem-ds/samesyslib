@@ -307,3 +307,6 @@ def get_branch_commit_from_mapping(query, conn):
 
     return branch_info, commit_info
 
+
+def custom_round(x, base=0.25):
+    return base * round(float(x)/base)
