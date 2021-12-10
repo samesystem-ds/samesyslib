@@ -109,7 +109,7 @@ class DB(POptimiseDataTypesMixin):
         self, pdf:pd.DataFrame, table:str=None, chunksize:int=10000, schema:str=None,
         if_exists:str='replace', index:bool=False, method:str='multi', **kwargs:dict) -> pd.DataFrame:
         try:
-            pdf.to_sql(table, self.engine, chunksize=chunksize, 
+            pdf.to_sql(table, self.engine, chunksize=chunksize,
             if_exists=if_exists, schema=schema, index=index, method=method)
         except Exception as e:
             logging.error('SQL EXCEPTION: {}'.format(str(e)))
@@ -128,7 +128,7 @@ class DB(POptimiseDataTypesMixin):
         result =  self.engine.execute(sql)
         if verbose:
             logging.info(f"Inserted rows:{result.rowcount}")
-        
+
         return result
 
     @timing
@@ -157,21 +157,19 @@ class DB(POptimiseDataTypesMixin):
                     if verbose:
                         logging.info(f"Executing query:\n{create_stmt}")
                     conn.execute(create_stmt)
-    
+
                 with tempfile.NamedTemporaryFile() as tf:
                     pdf.to_csv(tf.name, encoding='utf-8', header=True, \
                                 doublequote=True, sep=',', index=False, na_rep='NULL')
 
                     load_stmt = f"""
-                    LOAD DATA LOCAL INFILE '{tf.name}' 
-                    INTO TABLE {schema}.{table_name} FIELDS TERMINATED BY ',' ENCLOSED BY '\"' 
+                    LOAD DATA LOCAL INFILE '{tf.name}'
+                    INTO TABLE {schema}.{table_name} FIELDS TERMINATED BY ',' ENCLOSED BY '\"'
                     IGNORE 1 LINES;
                     """
                     if verbose:
                         logging.info(f"Executing query:\n{load_stmt}")
                     rows = conn.execute(load_stmt)
-
-                logging.info(f'Successfully loaded csv into table {schema}.{table} {rows.rowcount} rows.')
 
         except Exception as e:
             logging.error(f'SQL EXCEPTION: {str(e)}')
@@ -181,11 +179,11 @@ class DB(POptimiseDataTypesMixin):
 
     @timing
     def send(
-        self, pdf: pd.DataFrame, table: str=None, schema:str=None, 
+        self, pdf: pd.DataFrame, table: str=None, schema:str=None,
         if_exists:str='replace', index:bool=False, **kwargs:dict) -> str:
         if if_exists != 'replace':
             return self.send_append(pdf, table=table, if_exists=if_exists, index=index, **kwargs)
-        
+
         verbose = False
         if kwargs is not None:
             if 'verbose' in kwargs.keys():
@@ -211,8 +209,8 @@ class DB(POptimiseDataTypesMixin):
                     conn.execute(create_stmt)
 
                     load_stmt = f"""
-                    LOAD DATA LOCAL INFILE '{tf.name}' 
-                    INTO TABLE {schema}.{table+tmp_prefix} 
+                    LOAD DATA LOCAL INFILE '{tf.name}'
+                    INTO TABLE {schema}.{table+tmp_prefix}
                     FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES;
                     """
                     if verbose:

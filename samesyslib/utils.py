@@ -18,7 +18,7 @@ ConfigType = Dict[str, Dict[str, Union[str, int]]]
 
 def load_config(config_path: Union[str, Path]) -> ConfigType:
     '''Safely load yaml type configurations
-    
+
     Args:
         config_path (str, Path): path to your secrets
 
@@ -66,7 +66,7 @@ def sql_from_file(filename: Union[str, Path]) -> List[str]:
     sql_commands = sql_file.split(';')
     return(sql_commands)
 
-    
+
 def get_col_types(df, columns=None):
     if not columns:
         columns = df.columns
@@ -157,7 +157,7 @@ def update_model_metadata(conn:object, run_id:str, key:str, value:object,
         UPDATE `{table_schema}`.`{table_name}`
         SET {key} = '{value}'
         WHERE {run_id_col} = '{run_id}'
-        """, 
+        """,
         verbose = True
     )
 
@@ -191,8 +191,8 @@ def read_batched_shops_data(conn:object, batch:list, table_schema:str, table_nam
                            FROM {table_name}
                            WHERE {run_id_col} = '{run_id}'
                            AND shop_id in ({shops});
-                        """, optimize_verbose=False, timing_verbose=False)        
-    else:    
+                        """, optimize_verbose=False, timing_verbose=False)
+    else:
         tbl = conn.get(f"""SELECT *
                            FROM {table_name}
                            WHERE shop_id in ({shops});
@@ -276,18 +276,18 @@ def estimate_similarity(df:pd.DataFrame, fill_na:bool=False):
     return sim, shop_index
 
 
-def cartesian_product(left:pd.DataFrame, right:pd.DataFrame):
+def cartesian_product(left: pd.DataFrame, right: pd.DataFrame):
     return left.assign(key=1).merge(right.assign(key=1), on='key').drop('key', 1)
 
 
-def filter_rows_and_cols(df:pd.DataFrame, filter_list:list):
+def filter_rows_and_cols(df: pd.DataFrame, filter_list: list):
     """Filtering both rows and cols by provided name list.
     """
     return df.loc[df.index.isin(filter_list),
                   df.columns.astype(int).isin(filter_list)]
 
 
-def percentile(n:int):
+def percentile(n: int):
     """Percentile function that can be passed to pandas agg() function
     AND changes column name.
     """
@@ -295,4 +295,15 @@ def percentile(n:int):
         return x.quantile(n)
     percentile_.__name__ = 'q%s' % n
     return percentile_
+
+
+def get_branch_commit_from_mapping(query, conn):
+    result_set = conn.execute(query, verbose=True).first()
+    assert result_set is not None, 'No git branch and commit info saved in metadata mapping'
+
+    result = dict(result_set)
+    branch_info = json.loads(result['data_branch'])
+    commit_info = json.loads(result['data_commit'])
+
+    return branch_info, commit_info
 
