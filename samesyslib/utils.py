@@ -176,24 +176,24 @@ def save_bzipped(obj: object, filename: object, protocol: int=-1):
         pickle.dump(obj, f, protocol)
 
 
-def load_bzipped(data:object):
+def load_bzipped(data: object):
     """
     Reverse save_bzipped operation
     """
     return pickle.loads(bz2.decompress(data))
 
 
-def read_batched_shops_data(conn:object, batch:list, table_schema:str, table_name:str, run_id_col:str=None, run_id:str=None):
+def read_batched_shops_data(conn: object, batch: list, table_schema: str, table_name: str, run_id_col: str = None, run_id: str = None):
     shops = ','.join(batch.astype(str))
-    if run_id_col != None:
+    if run_id_col is not None:
         tbl = conn.get(f"""SELECT *
-                           FROM {table_name}
+                           FROM {table_schema}.{table_name}
                            WHERE {run_id_col} = '{run_id}'
                            AND shop_id in ({shops});
                         """, optimize_verbose=False, timing_verbose=False)
     else:
         tbl = conn.get(f"""SELECT *
-                           FROM {table_name}
+                           FROM {table_schema}.{table_name}
                            WHERE shop_id in ({shops});
                         """, optimize_verbose=False, timing_verbose=False)
     return tbl
@@ -306,3 +306,6 @@ def get_branch_commit_from_mapping(query, conn):
 
     return branch_info, commit_info
 
+
+def custom_round(x, base=0.25):
+    return base * round(float(x)/base)
