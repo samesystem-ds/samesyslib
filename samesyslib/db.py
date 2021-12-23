@@ -61,7 +61,7 @@ class POptimiseDataTypesMixin:
         return data
 
 class DB(POptimiseDataTypesMixin):
-    def __init__(self, connection_parms, conn=None, if_pymysql=False):
+    def __init__(self, connection_parms, conn=None, if_pymysql=True):
         if type(conn) is engine.Engine:
             self.engine = conn
         else:

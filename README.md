@@ -2,11 +2,10 @@
 
 [![Build Status](https://travis-ci.com/samesystem-ds/samesyslib.svg?branch=master)](https://travis-ci.com/samesystem-ds/samesyslib) 
 [![codecov](https://codecov.io/gh/samesystem-ds/samesyslib/branch/master/graph/badge.svg?token=W6fJRyzkU2)](https://codecov.io/gh/samesystem-ds/samesyslib)
-![PyPI](https://img.shields.io/pypi/v/samesyslib)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/samesyslib)
+[![PyPI](https://img.shields.io/pypi/v/samesyslib)](https://pypi.org/project/samesyslib/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/samesyslib)](https://pypi.org/project/samesyslib/)
 ![GitHub](https://img.shields.io/github/license/samesystem-ds/samesyslib)
 
-[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
 [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
 [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![Python 3.9](https://img.shields.io/badge/python-3.9-blue.svg)](https://www.python.org/downloads/release/python-390/)
