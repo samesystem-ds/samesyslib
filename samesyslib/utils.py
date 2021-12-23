@@ -2,7 +2,6 @@
 import bz2
 import io
 import json
-import logging
 import os
 import pickle
 from typing import Set, Dict, Union, List
