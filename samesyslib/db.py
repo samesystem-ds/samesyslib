@@ -60,6 +60,7 @@ class POptimiseDataTypesMixin:
             logging.info('RAM usage before/after optimization: {} / {}'.format(memory_before, self.mem_usage(data)))
         return data
 
+
 class DB(POptimiseDataTypesMixin):
     def __init__(self, connection_parms, conn=None, if_pymysql=True):
         if type(conn) is engine.Engine:
@@ -69,12 +70,12 @@ class DB(POptimiseDataTypesMixin):
                 self.params = connection_parms
             else:
                 self.params = json.loads(connection_parms)
+
             if not self.params:
                 raise Exception('DB connection params not provided')
-            if if_pymysql:
-                pymysql = '+pymysql'
-            else:
-                pymysql = ''
+
+            pymysql = '+pymysql' if if_pymysql else ''
+
             self.engine = create_engine(
                 f"mysql{pymysql}://{self.params['login']}:"
                 f"{self.params['password']}@"
@@ -92,14 +93,16 @@ class DB(POptimiseDataTypesMixin):
         assert result[1] == 'ON', '[CL ERROR] local_infile value IS OFF'
 
     @timing
-    def get(self, query: str=None, **kwargs: dict) -> pd.DataFrame:
+    def get(self, query: str = None, **kwargs: dict) -> pd.DataFrame:
         verbose = False
         if kwargs is not None:
             if 'verbose' in kwargs.keys():
                 verbose = kwargs['verbose']
         if verbose:
             logging.info(f"Executing query:\n{query}")
-        df = self.optimize_pandas_datatypes(pd.read_sql_query(query, self.engine), **kwargs)
+        df = self.optimize_pandas_datatypes(
+            pd.read_sql_query(query, self.engine),
+            **kwargs)
         if verbose:
             logging.info(f"Returned table shape: {df.shape}")
         return df
@@ -125,7 +128,7 @@ class DB(POptimiseDataTypesMixin):
         if verbose:
             logging.info(f"""Executing query:\n{sql}""")
 
-        result =  self.engine.execute(sql)
+        result = self.engine.execute(sql)
         if verbose:
             logging.info(f"Inserted rows:{result.rowcount}")
 
@@ -136,9 +139,8 @@ class DB(POptimiseDataTypesMixin):
         with self.engine.begin() as conn:
             conn.execute(sql)
 
-
     @timing
-    def send_append(self, pdf:pd.DataFrame, table:str = None, schema: str = None, **kwargs) -> str:
+    def send_append(self, pdf: pd.DataFrame, table: str = None, schema: str = None, **kwargs) -> str:
         verbose = False
         if kwargs is not None:
             if 'verbose' in kwargs.keys():
@@ -175,7 +177,6 @@ class DB(POptimiseDataTypesMixin):
             logging.error(f'SQL EXCEPTION: {str(e)}')
 
         return f"{schema}.{table}"
-
 
     @timing
     def send(
