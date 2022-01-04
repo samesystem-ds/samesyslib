@@ -304,7 +304,7 @@ def get_branch_commit_from_mapping(query, conn):
     branch_info = json.loads(result['git_branch_map'])
     commit_info = json.loads(result['git_commit_map'])
 
-    return branch_info, commit_infov
+    return branch_info, commit_info
 
 
 def custom_round(x, base=0.25):
