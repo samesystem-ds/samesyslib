@@ -1,13 +1,16 @@
 import json
 from functools import wraps
 from time import time
-import logging
 import tempfile
 
 from sqlalchemy import create_engine, engine
 import pandas as pd
 
-logging.basicConfig(level=logging.INFO)
+import logging
+
+log = logging.getLogger(__name__)
+# no log by default unless log system gets configured in the main code
+log.addHandler(logging.NullHandler()) 
 
 
 def timing(f):
@@ -48,7 +51,7 @@ class POptimiseDataTypesMixin:
             if 'optimize_verbose' in kwargs.keys():
                 verbose = kwargs['optimize_verbose']
         if verbose:
-            logging.info('OPTIMIZING PANDAS DATAFRAMES DATATYPES')
+            log.info('OPTIMIZING PANDAS DATAFRAMES DATATYPES')
         memory_before = self.mem_usage(data)
         result = data.select_dtypes(include=['int']).apply(pd.to_numeric, downcast='unsigned')
         data[result.columns] = result
@@ -57,7 +60,7 @@ class POptimiseDataTypesMixin:
         data[result.columns] = result
 
         if verbose:
-            logging.info('RAM usage before/after optimization: {} / {}'.format(memory_before, self.mem_usage(data)))
+            log.info('RAM usage before/after optimization: {} / {}'.format(memory_before, self.mem_usage(data)))
         return data
 
 class DB(POptimiseDataTypesMixin):
@@ -98,10 +101,10 @@ class DB(POptimiseDataTypesMixin):
             if 'verbose' in kwargs.keys():
                 verbose = kwargs['verbose']
         if verbose:
-            logging.info(f"Executing query:\n{query}")
+            log.info(f"Executing query:\n{query}")
         df = self.optimize_pandas_datatypes(pd.read_sql_query(query, self.engine), **kwargs)
         if verbose:
-            logging.info(f"Returned table shape: {df.shape}")
+            log.info(f"Returned table shape: {df.shape}")
         return df
 
     @timing
@@ -112,7 +115,7 @@ class DB(POptimiseDataTypesMixin):
             pdf.to_sql(table, self.engine, chunksize=chunksize,
             if_exists=if_exists, schema=schema, index=index, method=method)
         except Exception as e:
-            logging.error('SQL EXCEPTION: {}'.format(str(e)))
+            log.error('SQL EXCEPTION: {}'.format(str(e)))
         return table
 
     @timing
@@ -123,11 +126,11 @@ class DB(POptimiseDataTypesMixin):
                 verbose = kwargs['verbose']
 
         if verbose:
-            logging.info(f"""Executing query:\n{sql}""")
+            log.info(f"""Executing query:\n{sql}""")
 
         result =  self.engine.execute(sql)
         if verbose:
-            logging.info(f"Inserted rows:{result.rowcount}")
+            log.info(f"Inserted rows:{result.rowcount}")
 
         return result
 
@@ -155,7 +158,7 @@ class DB(POptimiseDataTypesMixin):
                 if not conn.execute(f'show tables like "{table_name}"'):
                     create_stmt = pd.io.sql.get_schema(pdf, table_name, con=self.engine)
                     if verbose:
-                        logging.info(f"Executing query:\n{create_stmt}")
+                        log.info(f"Executing query:\n{create_stmt}")
                     conn.execute(create_stmt)
 
                 with tempfile.NamedTemporaryFile() as tf:
@@ -168,11 +171,11 @@ class DB(POptimiseDataTypesMixin):
                     IGNORE 1 LINES;
                     """
                     if verbose:
-                        logging.info(f"Executing query:\n{load_stmt}")
+                        log.info(f"Executing query:\n{load_stmt}")
                     rows = conn.execute(load_stmt)
 
         except Exception as e:
-            logging.error(f'SQL EXCEPTION: {str(e)}')
+            log.error(f'SQL EXCEPTION: {str(e)}')
 
         return f"{schema}.{table}"
 
@@ -197,7 +200,7 @@ class DB(POptimiseDataTypesMixin):
             with self.engine.connect() as conn:
                 query = f"DROP TABLE IF EXISTS {schema}.{table}, {schema}.{table + tmp_prefix};"
                 if verbose:
-                    logging.info(f"Executing query:\n{query}")
+                    log.info(f"Executing query:\n{query}")
                 conn.execute(query)
                 with tempfile.NamedTemporaryFile() as tf:
                     pdf.to_csv(tf.name, encoding='utf-8', header=True, chunksize=300000, \
@@ -205,7 +208,7 @@ class DB(POptimiseDataTypesMixin):
                     conn.execute(f"USE {schema};")
                     create_stmt = pd.io.sql.get_schema(pdf, table+tmp_prefix, con=self.engine)
                     if verbose:
-                        logging.info(f"Executing query:\n{create_stmt}")
+                        log.info(f"Executing query:\n{create_stmt}")
                     conn.execute(create_stmt)
 
                     load_stmt = f"""
@@ -214,12 +217,12 @@ class DB(POptimiseDataTypesMixin):
                     FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES;
                     """
                     if verbose:
-                        logging.info(f"Executing query:\n{load_stmt}")
+                        log.info(f"Executing query:\n{load_stmt}")
                     rows = conn.execute(load_stmt)
                     conn.execute(f"RENAME TABLE {schema}.{table + tmp_prefix} TO {schema}.{table};")
-            logging.info(f'Succuessfully loaded csv into table {schema}.{table} {rows.rowcount} rows.')
+            log.info(f'Succuessfully loaded csv into table {schema}.{table} {rows.rowcount} rows.')
 
         except Exception as e:
-            logging.error(f'SQL EXCEPTION: {str(e)}')
+            log.error(f'SQL EXCEPTION: {str(e)}')
 
         return f"{schema}.{table}"
