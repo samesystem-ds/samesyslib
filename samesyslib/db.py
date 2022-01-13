@@ -81,7 +81,12 @@ class POptimiseDataTypesMixin:
 
 
 class DB(POptimiseDataTypesMixin):
-    def __init__(self, connection_parms, conn=None, if_pymysql=True):
+    def __init__(self, connection_parms, conn=None, if_pymysql=True, if_mysqldb=False):
+        """inputs:
+            if_mysqldb - should we use mysqlclient (fork of MySQL-Python) driver? Supposed to be the fastest connection.
+            if_pymysql - should we use pymysql (purely python based) driver? Well supported and maintained.
+            if both if_mysqldb and if_pymysql are set to True, if_mysqldb takes priority
+        """
         if type(conn) is engine.Engine:
             self.engine = conn
         else:
@@ -93,10 +98,15 @@ class DB(POptimiseDataTypesMixin):
             if not self.params:
                 raise Exception("DB connection params not provided")
 
-            pymysql = "+pymysql" if if_pymysql else ""
+            if if_mysqldb:
+                connector = "+mysqldb" 
+            elif if_pymysql:
+                connector = "+pymysql" 
+            else:
+                connector = ""
 
             self.engine = create_engine(
-                f"mysql{pymysql}://{self.params['login']}:"
+                f"mysql{connector}://{self.params['login']}:"
                 f"{self.params['password']}@"
                 f"{self.params['host']}"
                 f":{self.params['port']}/"
@@ -289,3 +299,28 @@ class DB(POptimiseDataTypesMixin):
             log.error(f"SQL EXCEPTION: {str(e)}")
 
         return f"{schema}.{table}"
+
+
+    def size(self, schema: str = None) -> pd.DataFrame:
+        """Create a dataframe of sizes of tables"""
+        if schema:
+            condition = f'''TABLE_SCHEMA = "{schema}"'''
+        else:
+            condition = "TRUE"
+        query = f"""SELECT
+                    TABLE_SCHEMA as `Database`,
+                    TABLE_NAME AS `Table`,
+                    ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024) AS `Size_MB`
+                    FROM
+                    information_schema.TABLES
+                    WHERE
+                    {condition}
+                    ORDER BY
+                    TABLE_SCHEMA, (DATA_LENGTH + INDEX_LENGTH)
+                    DESC;
+                    """
+        try:
+            df= pd.read_sql_query(query, self.engine)
+            return df
+        except Exception as e:
+            log.error(f"SQL EXCEPTION: {str(e)}")
