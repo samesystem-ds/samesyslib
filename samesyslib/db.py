@@ -31,11 +31,8 @@ def timing(f):
         result = f(*args, **kwargs)
         end = time()
         if verbose:
-            print(
-                "Function: {}. Elapsed time: {} s".format(
-                    f.__name__, round(end - start, 1)
-                )
-            )
+            log.info(f"Function: {f.__name__}.\
+                Elapsed time: {round(end - start, 1)} s")
         return result
 
     return wrapper
@@ -81,7 +78,7 @@ class POptimiseDataTypesMixin:
 
 
 class DB(POptimiseDataTypesMixin):
-    def __init__(self, connection_parms, conn=None, if_pymysql=True, if_mysqldb=False):
+    def __init__(self, connection_parms, conn=None, if_pymysql=False, if_mysqldb=False):
         """inputs:
             if_mysqldb - should we use mysqlclient (fork of MySQL-Python) driver? Supposed to be the fastest connection.
             if_pymysql - should we use pymysql (purely python based) driver? Well supported and maintained.
@@ -292,7 +289,7 @@ class DB(POptimiseDataTypesMixin):
                         f"RENAME TABLE {schema}.{table + tmp_prefix} TO {schema}.{table};"
                     )
             log.info(
-                f"Succuessfully loaded csv into table {schema}.{table} {rows.rowcount} rows."
+                f"Successfully loaded csv into table {schema}.{table} {rows.rowcount} rows."
             )
 
         except Exception as e:
@@ -324,3 +321,49 @@ class DB(POptimiseDataTypesMixin):
             return df
         except Exception as e:
             log.error(f"SQL EXCEPTION: {str(e)}")
+
+
+    def create_on_statement(self):
+        on = " AND ".join([f"s.{id_col} = t.{id_col}" for id_col in self.id_cols])
+        return on
+
+    def create_update_statement(self):
+        update = ", ".join(
+            [f"t.{col} = s.{col}" for col in self.columns if col not in self.id_cols]
+        )
+        return update
+
+    def create_insert_statement(self):
+        insert = f"({', '.join(self.columns)})"
+
+        values = ", ".join([f"s.{col}" for col in self.columns])
+        values = f"({values})"
+
+        return insert, values
+
+
+    @timing
+    def upsert(
+        self,
+        pdf: pd.DataFrame,
+        table: str = None,
+        chunksize: int = 10000,
+        schema: str = None,
+        if_exists: str = "replace",
+        index: bool = False,
+        method: str = "multi",
+        **kwargs: dict,
+    ) -> pd.DataFrame:
+        try:
+            pdf.to_sql(
+                table,
+                self.engine,
+                chunksize=chunksize,
+                if_exists=if_exists,
+                schema=schema,
+                index=index,
+                method=method,
+            )
+        except Exception as e:
+            log.error("SQL EXCEPTION: {}".format(str(e)))
+        return table

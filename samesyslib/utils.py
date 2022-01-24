@@ -29,7 +29,7 @@ def load_config(config_path: Union[str, Path]) -> ConfigType:
         .. code-block:: python
 
             # /opt/settings/config.yml
-            database:
+met            database:
               user: 'root'
             # ----
 
