@@ -78,7 +78,7 @@ class POptimiseDataTypesMixin:
 
 
 class DB(POptimiseDataTypesMixin):
-    def __init__(self, connection_parms, conn=None, if_pymysql=False, if_mysqldb=False):
+    def __init__(self, connection_parms, conn=None, if_pymysql=False, if_mysqldb=False, **kwargs):
         """inputs:
             if_mysqldb - should we use mysqlclient (fork of MySQL-Python) driver? Supposed to be the fastest connection.
             if_pymysql - should we use pymysql (purely python based) driver? Well supported and maintained.
@@ -109,6 +109,7 @@ class DB(POptimiseDataTypesMixin):
                 f":{self.params['port']}/"
                 f"{self.params['schema']}?charset=utf8mb4&local_infile=1",
                 pool_pre_ping=True,
+                **kwargs
             )
         self._check_local_infile()
 
