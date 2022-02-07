@@ -301,8 +301,8 @@ def get_branch_commit_from_mapping(query, conn):
     assert result_set is not None, 'No git branch and commit info saved in metadata mapping'
 
     result = dict(result_set)
-    branch_info = json.loads(result['data_branch'])
-    commit_info = json.loads(result['data_commit'])
+    branch_info = json.loads(result['git_branch_map'])
+    commit_info = json.loads(result['git_commit_map'])
 
     return branch_info, commit_info
 
