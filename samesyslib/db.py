@@ -8,6 +8,8 @@ import pandas as pd
 
 import logging
 
+from samesyslib.db_config import DBParams
+
 log = logging.getLogger(__name__)
 # no log by default unless log system gets configured in the main code
 log.addHandler(logging.NullHandler())
@@ -78,39 +80,17 @@ class POptimiseDataTypesMixin:
 
 
 class DB(POptimiseDataTypesMixin):
-    def __init__(self, connection_parms, conn=None, if_pymysql=False, if_mysqldb=False, **kwargs):
-        """inputs:
-            if_mysqldb - should we use mysqlclient (fork of MySQL-Python) driver? Supposed to be the fastest connection.
-            if_pymysql - should we use pymysql (purely python based) driver? Well supported and maintained.
-            if both if_mysqldb and if_pymysql are set to True, if_mysqldb takes priority
-        """
-        if type(conn) is engine.Engine:
-            self.engine = conn
-        else:
-            if type(connection_parms) is dict:
-                self.params = connection_parms
-            else:
-                self.params = json.loads(connection_parms)
+    def __init__(self, config: DBParams):
+        print ('CONFIG', config.__dict__)
+        self.engine = create_engine(
+            f"mysql+{config.connector}://{config.login}:"
+            f"{config.password}@"
+            f"{config.host}"
+            f":{config.port}/"
+            f"{config.schema}?charset=utf8mb4&local_infile=1",
+            pool_pre_ping=True,
+        )
 
-            if not self.params:
-                raise Exception("DB connection params not provided")
-
-            if if_mysqldb:
-                connector = "+mysqldb" 
-            elif if_pymysql:
-                connector = "+pymysql" 
-            else:
-                connector = ""
-
-            self.engine = create_engine(
-                f"mysql{connector}://{self.params['login']}:"
-                f"{self.params['password']}@"
-                f"{self.params['host']}"
-                f":{self.params['port']}/"
-                f"{self.params['schema']}?charset=utf8mb4&local_infile=1",
-                pool_pre_ping=True,
-                **kwargs
-            )
         self._check_local_infile()
 
     def _check_local_infile(self):
