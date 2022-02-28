@@ -9,7 +9,7 @@ from samesyslib.utils import load_config
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-DEFAULT_ENV = 'dev'
+DEFAULT_ENV = "dev"
 
 
 class Envs(Enum):
@@ -38,7 +38,7 @@ class DBConfig(object):
         self.bi_connection = None
 
         if env and env not in Envs._value2member_map_:
-            raise Exception(f'ERROR: passed env: {env} is not valid')
+            raise Exception(f"ERROR: passed env: {env} is not valid")
         self.env = env or DEFAULT_ENV
 
         self._proceed()
@@ -51,24 +51,24 @@ class DBConfig(object):
             self.db_connection = DBParams(**conf)
 
             conf = cred[self.env]
-            conf['schema'] = 'samesystem_sisense'
+            conf["schema"] = "samesystem_sisense"
             self.bi_connection = DBParams(**conf)
         except FileNotFoundError:
             logging.debug("Config file not found. Try to load DB data from ENV")
             self.db_connection = DBParams(
-                host = os.getenv("DB_HOST"),
-                schema= os.getenv("SCHEMA"),
-                login= os.getenv("LOGIN"),
-                password= os.getenv("PASSWORD"),
-                port= os.getenv("DB_PORT")
+                host=os.getenv("DB_HOST"),
+                schema=os.getenv("SCHEMA"),
+                login=os.getenv("LOGIN"),
+                password=os.getenv("PASSWORD"),
+                port=os.getenv("DB_PORT"),
             )
 
             self.bi_connection = DBParams(
-                host= os.getenv.get('BI_DB_HOST'),
-                schema= os.getenv.get('BI_SCHEMA'),
-                login=os.getenv.get('BI_LOGIN'),
-                password= os.getenv.get('BI_PASSWORD'),
-                port= os.getenv.get('BI_DB_PORT')
+                host=os.getenv.get("BI_DB_HOST"),
+                schema=os.getenv.get("BI_SCHEMA"),
+                login=os.getenv.get("BI_LOGIN"),
+                password=os.getenv.get("BI_PASSWORD"),
+                port=os.getenv.get("BI_DB_PORT"),
             )
 
     def get_config(self):

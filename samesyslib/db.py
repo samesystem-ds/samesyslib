@@ -80,8 +80,11 @@ class POptimiseDataTypesMixin:
 
 
 class DB(POptimiseDataTypesMixin):
+    _schema = None
+
     def __init__(self, config: DBParams):
-        print ('CONFIG', config.__dict__)
+        self._schema = config.schema
+
         self.engine = create_engine(
             f"mysql+{config.connector}://{config.login}:"
             f"{config.password}@"
@@ -171,8 +174,7 @@ class DB(POptimiseDataTypesMixin):
                 verbose = kwargs["verbose"]
 
         table_name = table
-        if schema is None:
-            schema = self.params["schema"]
+        schema = schema or self._schema
 
         try:
             with self.engine.connect() as conn:
@@ -230,8 +232,7 @@ class DB(POptimiseDataTypesMixin):
                 verbose = kwargs["verbose"]
 
         tmp_prefix = "_tmp"
-        if schema is None:
-            schema = self.params["schema"]
+        schema = schema or self._schema
 
         try:
             with self.engine.connect() as conn:
