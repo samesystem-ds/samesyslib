@@ -92,6 +92,7 @@ class DB(POptimiseDataTypesMixin):
             f":{config.port}/"
             f"{config.schema}?charset=utf8mb4&local_infile=1",
             pool_pre_ping=True,
+            connect_args={**config.connect_args}
         )
 
         self._check_local_infile()
