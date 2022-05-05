@@ -22,6 +22,7 @@ class DBParams(object):
     password = None
     port = None
     connector = "pymysql"
+    parameters = {}
     connect_args = {}
 
     def __init__(self, **params):
@@ -29,11 +30,12 @@ class DBParams(object):
 
 
 class DBConfig(object):
-    def __init__(self, env=None, schema=None, bi=False, connect_args={}):
+    def __init__(self, env=None, schema=None, bi=False, parameters={}, connect_args={}):
         self._schema = schema
         self._env = env
         self._bi = bi
         self._connect_args = connect_args
+        self._parameters = parameters
 
         self.db_connection = None
         self.bi_connection = None
@@ -63,6 +65,7 @@ class DBConfig(object):
             login=os.getenv("LOGIN"),
             password=os.getenv("PASSWORD"),
             port=os.getenv("DB_PORT"),
+            parameters=self._parameters,
             connect_args=self._connect_args
         )
 
@@ -73,6 +76,7 @@ class DBConfig(object):
                 login=os.getenv("BI_LOGIN"),
                 password=os.getenv("BI_PASSWORD"),
                 port=os.getenv("BI_DB_PORT"),
+                parameters=self._parameters,
                 connect_args=self._connect_args
             )
 
