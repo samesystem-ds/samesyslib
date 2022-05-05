@@ -27,6 +27,14 @@ config_path = Path("/opt/settings/config.yml")
 conf = load_config(config_path)
 
 conf['database']['user']
+
+# or 
+
+from samesyslib.db import DB
+from samesyslib.db_config import DBConfig
+
+
+db = DB(DBConfig().get_config())
 ```
 
 #### Install
