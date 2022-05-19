@@ -71,11 +71,11 @@ class DBConfig(object):
 
         if self._bi:
             self.bi_connection = DBParams(
-                host=os.getenv("BI_DB_HOST"),
-                schema=os.getenv("BI_SCHEMA"),
-                login=os.getenv("BI_LOGIN"),
-                password=os.getenv("BI_PASSWORD"),
-                port=os.getenv("BI_DB_PORT"),
+                host=os.getenv("BI_DB_HOST", os.getenv("BI_DB_HOST_SHARD1")),
+                schema=os.getenv("BI_SCHEMA", os.getenv("BI_SCHEMA", "samesystem_sisense")),
+                login=os.getenv("BI_LOGIN", os.getenv("BI_DB_LOGIN_SHARD1")),
+                password=os.getenv("BI_PASSWORD", os.getenv("BI_DB_PASS_SHARD1")),
+                port=os.getenv("BI_DB_PORT", os.getenv("BI_DB_PORT_SHARD1")),
                 parameters=self._parameters,
                 connect_args=self._connect_args
             )
