@@ -52,10 +52,14 @@ class DBConfig(object):
         path = Path.home() / Path(CONFIG_PATH)
         cred = load_config(path)
         conf = cred[self._env]
+        conf['parameters'] = self._parameters
+        conf['connect_args'] = self._connect_args
         self.db_connection = DBParams(**conf)
 
         conf = cred[self._env]
         conf["schema"] = "samesystem_sisense"
+        conf['parameters'] = self._parameters
+        conf['connect_args'] = self._connect_args
         self.bi_connection = DBParams(**conf)
 
     def _load_from_env(self):
