@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="samesyslib",
-    version="0.0.36",
+    version="0.0.37",
     author="SameSystem",
     author_email="giedrius.blazys@samesystem.com",
     description="Common libs used by SameSystem Data Science team.",
@@ -21,7 +21,8 @@ setuptools.setup(
     install_requires=[
         'ruamel.yaml',
         'sqlalchemy',
-        'pandas'
+        'pandas',
+        'pymysql'
     ],
     python_requires=">=3.7",
 )
