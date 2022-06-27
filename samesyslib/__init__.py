@@ -1,9 +1,4 @@
-"""Something nice and descriptive."""
-
-# from main_package.some_module import some_function_or_class
+"""Common libs used by SameSystem Data Science team"""
 
 from samesyslib._version import __version__
 
-__all__ = (
-    # some_function_or_class,
-)
