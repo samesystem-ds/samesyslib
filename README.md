@@ -1,6 +1,6 @@
 ## Common functions for Data Science
 
-[![Build Status](https://travis-ci.com/samesystem-ds/samesyslib.svg?branch=master)](https://travis-ci.com/samesystem-ds/samesyslib) 
+[![Build Status](https://app.travis-ci.com/samesystem-ds/samesyslib.svg?branch=master)](https://app.travis-ci.com/github/samesystem-ds/samesyslib) 
 [![codecov](https://codecov.io/gh/samesystem-ds/samesyslib/branch/master/graph/badge.svg?token=W6fJRyzkU2)](https://codecov.io/gh/samesystem-ds/samesyslib)
 [![PyPI](https://img.shields.io/pypi/v/samesyslib)](https://pypi.org/project/samesyslib/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/samesyslib)](https://pypi.org/project/samesyslib/)
