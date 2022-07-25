@@ -5,7 +5,7 @@ from pathlib import Path
 from samesyslib.utils import load_config
 
 
-DEFAULT_ENV = "dev"
+DEFAULT_ENV = os.getenv("DB_ENVIRONMENT", "dev")
 CONFIG_PATH = os.getenv("CONFIG_PATH", None)
 
 
