@@ -15,6 +15,7 @@ from pathlib import Path
 
 ConfigType = Dict[str, Dict[str, Union[str, int]]]
 
+
 def load_config(config_path: Union[str, Path]) -> ConfigType:
     '''Safely load yaml type configurations
 
@@ -44,6 +45,14 @@ met            database:
     from ruamel import yaml
     with io.open(file=config_path, mode="rt") as config_file:
         return yaml.safe_load(config_file)
+
+
+def get_config_value(key, value=None, config_path=None):
+    config_path = config_path or os.getenv("config_path")
+    config_values = load_config()
+    if not value and key not in config_values:
+        assert key in config_values, f"ERROR {key} not found in config"
+    return config_values.get(key, value)
 
 
 def hms_format(seconds: int) -> str:
