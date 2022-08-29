@@ -49,7 +49,7 @@ met            database:
 
 def get_config_value(key, value=None, config_path=None):
     config_path = config_path or os.getenv("config_path")
-    config_values = load_config()
+    config_values = load_config(config_path)
     if not value and key not in config_values:
         assert key in config_values, f"ERROR {key} not found in config"
     return config_values.get(key, value)
