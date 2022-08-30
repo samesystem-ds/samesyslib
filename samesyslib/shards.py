@@ -9,6 +9,44 @@ from samesyslib.utils import get_config_value
 
 logger = logging.getLogger(__name__)
 
+"""
+USAGE
+
+# hard requirement
+# ENV VARIABLE => config_path=PATH_TO_YOUR_YML_CONFIG_FILE.yml
+as underneath we use samesyslib/utils.py.get_config_value
+to get value
+
+yml should be structured like:
+...
+db:
+  shards:
+    shardK:
+      host: 0.0.0.0
+      port: 3333
+      login: login
+      password: pass
+      schema: schema
+    shardM:
+      host: 0.0.0.0
+      port: 3333
+      login: login
+      password: pass
+      schema: schema
+    shardN:
+      host: 0.0.0.0
+      port: 3333
+      login: login
+      password: pass
+      schema: schema
+  ...
+
+
+from samesyslib.shards import get_shards_db_client
+shards_db_client = get_shards_db_client()
+data = shards_db_client.combined_query("SELECT NOW()")
+"""
+
 
 class Shard(BaseModel):
     name: str
@@ -32,10 +70,10 @@ class ShardsDBClient:
         for shard in shards_settings.SHARDS:
             it = DBParams()
             for name, value in shard.dict().items():
-                if name == 'schema_':
-                    name = 'schema'
+                if name == "schema_":
+                    name = "schema"
                 setattr(it, name, value)
-            self._conns[shard.dict()['name']] = DB(it)
+            self._conns[shard.dict()["name"]] = DB(it)
 
     def query(self, sql):
         result = {}
@@ -56,7 +94,7 @@ class ShardsDBClient:
 def get_shards_db_client():
     shards = []
     for name, value in get_config_value("db")["shards"].items():
-        shards.append(value | {'name': name})
+        shards.append(value | {"name": name})
 
     shards_db_client = ShardsDBClient(ShardsSettings(SHARDS=shards))
 

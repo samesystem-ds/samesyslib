@@ -1,4 +1,5 @@
 import os
+
 # from enum import Enum
 from pathlib import Path
 
@@ -52,14 +53,14 @@ class DBConfig(object):
         path = Path.home() / Path(CONFIG_PATH)
         cred = load_config(path)
         conf = cred[self._env]
-        conf['parameters'] = self._parameters
-        conf['connect_args'] = self._connect_args
+        conf["parameters"] = self._parameters
+        conf["connect_args"] = self._connect_args
         self.db_connection = DBParams(**conf)
 
         conf = cred[self._env]
         conf["schema"] = "samesystem_sisense"
-        conf['parameters'] = self._parameters
-        conf['connect_args'] = self._connect_args
+        conf["parameters"] = self._parameters
+        conf["connect_args"] = self._connect_args
         self.bi_connection = DBParams(**conf)
 
     def _load_from_env(self):
@@ -70,18 +71,20 @@ class DBConfig(object):
             password=os.getenv("PASSWORD"),
             port=os.getenv("DB_PORT"),
             parameters=self._parameters,
-            connect_args=self._connect_args
+            connect_args=self._connect_args,
         )
 
         if self._bi:
             self.bi_connection = DBParams(
                 host=os.getenv("BI_DB_HOST", os.getenv("BI_DB_HOST_SHARD1")),
-                schema=os.getenv("BI_SCHEMA", os.getenv("BI_SCHEMA", "samesystem_sisense")),
+                schema=os.getenv(
+                    "BI_SCHEMA", os.getenv("BI_SCHEMA", "samesystem_sisense")
+                ),
                 login=os.getenv("BI_LOGIN", os.getenv("BI_DB_LOGIN_SHARD1")),
                 password=os.getenv("BI_PASSWORD", os.getenv("BI_DB_PASS_SHARD1")),
                 port=os.getenv("BI_DB_PORT", os.getenv("BI_DB_PORT_SHARD1")),
                 parameters=self._parameters,
-                connect_args=self._connect_args
+                connect_args=self._connect_args,
             )
 
     def _proceed(self):
