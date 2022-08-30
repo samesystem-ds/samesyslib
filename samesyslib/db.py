@@ -1,12 +1,11 @@
 import json
+import logging
 from functools import wraps
 from time import time
 import tempfile
 
 from sqlalchemy import create_engine, engine
 import pandas as pd
-
-import logging
 
 from samesyslib.db_config import DBParams
 

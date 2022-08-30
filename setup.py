@@ -22,7 +22,8 @@ setuptools.setup(
         'ruamel.yaml',
         'sqlalchemy',
         'pandas',
-        'pymysql'
+        'pymysql',
+        'pydantic'
     ],
     python_requires=">=3.7",
 )
