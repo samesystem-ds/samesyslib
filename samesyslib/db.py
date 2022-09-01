@@ -280,6 +280,35 @@ class DB(POptimiseDataTypesMixin):
 
         return f"{schema}.{table}"
 
+    @timing
+    def send_replace(
+        self,
+        df: pd.DataFrame,
+        table: str,
+        schema: str = None,
+        **kwargs: dict
+    ) -> str:
+        schema = schema or self._schema
+        with tempfile.NamedTemporaryFile() as tf:
+            df.to_csv(
+                tf.name,
+                encoding="utf-8",
+                header=True,
+                doublequote=True,
+                sep=",",
+                index=False,
+                na_rep="NULL",
+            )
+
+            load_stmt = f"""
+            LOAD DATA LOCAL INFILE '{tf.name}'
+            REPLACE INTO TABLE {schema}.{table} FIELDS TERMINATED BY ',' ENCLOSED BY '\"'
+            IGNORE 1 LINES;
+            """
+            with self.engine.connect() as conn:
+                rows = conn.execute(load_stmt)
+                log.info(f'ROWS INSERTED: {rows.rowcount}')
+        return f"{schema}.{table}"
 
     def size(self, schema: str = None) -> pd.DataFrame:
         """Create a dataframe of sizes of tables"""
