@@ -90,6 +90,12 @@ class ShardsDBClient:
                 combined.append(row)
         return combined
 
+    def combined_get_and_replace(self, sql, conn, table):
+        for name, db in self._conns.items():
+            result_df = db.get(sql)
+            result_df['_shard'] = name
+            conn.send_replace(result_df, table=table)
+
 
 def get_shards_db_client():
     shards = []
