@@ -23,6 +23,7 @@ class DBParams(object):
     password = None
     port = None
     connector = "pymysql"
+    _shard = None
     parameters = {}
     connect_args = {}
 

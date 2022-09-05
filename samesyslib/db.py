@@ -80,9 +80,11 @@ class POptimiseDataTypesMixin:
 
 class DB(POptimiseDataTypesMixin):
     _schema = None
+    _shard = None
 
     def __init__(self, config: DBParams):
         self._schema = config.schema
+        self._shard = config._shard
 
         self.engine = create_engine(
             f"mysql+{config.connector}://{config.login}:"
@@ -353,7 +355,6 @@ class DB(POptimiseDataTypesMixin):
 
         return insert, values
 
-
     @timing
     def upsert(
         self,
@@ -379,3 +380,6 @@ class DB(POptimiseDataTypesMixin):
         except Exception as e:
             log.error("SQL EXCEPTION: {}".format(str(e)))
         return table
+
+    def get_shard(self):
+        return self._shard
