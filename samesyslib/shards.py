@@ -1,4 +1,5 @@
 import logging
+import time
 
 from sqlalchemy.sql import text
 from pydantic import BaseSettings, BaseModel
@@ -96,6 +97,9 @@ class ShardsDBClient:
             result_df['_shard'] = name
             conn.send_replace(result_df, table=table)
 
+    def get_shards_conns(self):
+        return [db for name, db in self._conns.items()]
+
 
 def get_shards_db_client():
     shards = []
@@ -105,3 +109,17 @@ def get_shards_db_client():
     shards_db_client = ShardsDBClient(ShardsSettings(SHARDS=shards))
 
     return shards_db_client
+
+
+def execute_sql(engine, sql):
+    start_time = time.time()
+    try:
+        result = engine.execute(sql)
+        logger.info(
+            f"Execution_time: {time.time() - start_time}. Shard: {engine.get_shard()}"
+        )
+        logger.info(f"Result: {result}. Shard: {engine.get_shard()}")
+    except Exception as e:
+        logger.error(f"EXCEPTION: {str(e)}")
+    return result
+
