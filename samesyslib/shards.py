@@ -74,6 +74,7 @@ class ShardsDBClient:
                 if name == "schema_":
                     name = "schema"
                 setattr(it, name, value)
+            it._shard = shard.name
             self._conns[shard.dict()["name"]] = DB(it)
 
     def query(self, sql):
@@ -113,6 +114,7 @@ def get_shards_db_client():
 
 def execute_sql(engine, sql):
     start_time = time.time()
+    result = None
     try:
         result = engine.execute(sql)
         logger.info(
