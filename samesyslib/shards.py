@@ -3,6 +3,7 @@ import time
 
 from sqlalchemy.sql import text
 from pydantic import BaseSettings, BaseModel
+from typing import Optional
 
 from samesyslib.db import DB
 from samesyslib.db_config import DBParams
@@ -56,6 +57,7 @@ class Shard(BaseModel):
     login: str
     password: str
     schema_: str  # reserved by pydantic
+    connect_args: Optional[dict] = {}
 
     class Config:
         fields = {"schema_": "schema"}
