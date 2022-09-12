@@ -116,14 +116,10 @@ def get_shards_db_client():
 
 def execute_sql(engine, sql):
     start_time = time.time()
-    result = None
-    try:
-        result = engine.execute(sql)
-        logger.info(
-            f"Execution_time: {time.time() - start_time}. Shard: {engine.get_shard()}"
-        )
-        logger.info(f"Result: {result}. Shard: {engine.get_shard()}")
-    except Exception as e:
-        logger.error(f"EXCEPTION: {str(e)}")
-    return result
+    engine.execute(sql)
+
+    return {
+        'shard': engine.get_shard(),
+        "duration": time.time() - start_time
+    }
 
