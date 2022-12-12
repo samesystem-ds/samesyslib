@@ -7,7 +7,7 @@ setuptools.setup(
     name="samesyslib",
     version=open("samesyslib/_version.py").readlines()[-1].split()[-1].strip("\"'"),
     author="SameSystem",
-    author_email="giedrius.blazys@samesystem.com",
+    author_email="linas.ziedas@samesystem.com",
     description="Common libs used by SameSystem Data Science team.",
     long_description=long_description,
     long_description_content_type="text/markdown",
