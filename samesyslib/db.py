@@ -1,12 +1,11 @@
 import json
+import logging
 from functools import wraps
 from time import time
 import tempfile
 
 from sqlalchemy import create_engine, engine
 import pandas as pd
-
-import logging
 
 from samesyslib.db_config import DBParams
 
@@ -33,8 +32,10 @@ def timing(f):
         result = f(*args, **kwargs)
         end = time()
         if verbose:
-            log.info(f"Function: {f.__name__}.\
-                Elapsed time: {round(end - start, 1)} s")
+            log.info(
+                f"Function: {f.__name__}.\
+                Elapsed time: {round(end - start, 1)} s"
+            )
         return result
 
     return wrapper
@@ -46,7 +47,7 @@ class POptimiseDataTypesMixin:
             usage_b = pandas_obj.memory_usage(deep=True).sum()
         else:  # we assume if not a df it's a series
             usage_b = pandas_obj.memory_usage(deep=True)
-        usage_mb = usage_b / 1024 ** 2  # convert bytes to megabytes
+        usage_mb = usage_b / 1024**2  # convert bytes to megabytes
         return "{:03.2f} MB".format(usage_mb)
 
     @timing
@@ -81,9 +82,11 @@ class POptimiseDataTypesMixin:
 
 class DB(POptimiseDataTypesMixin):
     _schema = None
+    _shard = None
 
     def __init__(self, config: DBParams):
         self._schema = config.schema
+        self._shard = config._shard
 
         self.engine = create_engine(
             f"mysql+{config.connector}://{config.login}:"
@@ -93,7 +96,7 @@ class DB(POptimiseDataTypesMixin):
             f"{config.schema}?charset=utf8mb4&local_infile=1",
             pool_pre_ping=True,
             **config.parameters,
-            connect_args={**config.connect_args}
+            connect_args={**config.connect_args},
         )
 
         self._check_local_infile()
@@ -281,6 +284,31 @@ class DB(POptimiseDataTypesMixin):
 
         return f"{schema}.{table}"
 
+    @timing
+    def send_replace(
+        self, df: pd.DataFrame, table: str, schema: str = None, **kwargs: dict
+    ) -> str:
+        schema = schema or self._schema
+        with tempfile.NamedTemporaryFile() as tf:
+            df.to_csv(
+                tf.name,
+                encoding="utf-8",
+                header=True,
+                doublequote=True,
+                sep=",",
+                index=False,
+                na_rep="NULL",
+            )
+
+            load_stmt = f"""
+            LOAD DATA LOCAL INFILE '{tf.name}'
+            REPLACE INTO TABLE {schema}.{table} FIELDS TERMINATED BY ',' ENCLOSED BY '\"'
+            IGNORE 1 LINES;
+            """
+            with self.engine.connect() as conn:
+                rows = conn.execute(load_stmt)
+                log.info(f"ROWS INSERTED: {rows.rowcount}")
+        return f"{schema}.{table}"
 
     def size(self, schema: str = None) -> pd.DataFrame:
         """Create a dataframe of sizes of tables"""
@@ -301,11 +329,10 @@ class DB(POptimiseDataTypesMixin):
                     DESC;
                     """
         try:
-            df= pd.read_sql_query(query, self.engine)
+            df = pd.read_sql_query(query, self.engine)
             return df
         except Exception as e:
             log.error(f"SQL EXCEPTION: {str(e)}")
-
 
     def create_on_statement(self):
         on = " AND ".join([f"s.{id_col} = t.{id_col}" for id_col in self.id_cols])
@@ -324,7 +351,6 @@ class DB(POptimiseDataTypesMixin):
         values = f"({values})"
 
         return insert, values
-
 
     @timing
     def upsert(
@@ -351,3 +377,6 @@ class DB(POptimiseDataTypesMixin):
         except Exception as e:
             log.error("SQL EXCEPTION: {}".format(str(e)))
         return table
+
+    def get_shard(self):
+        return self._shard

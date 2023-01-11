@@ -1,4 +1,5 @@
 import os
+
 # from enum import Enum
 from pathlib import Path
 
@@ -22,6 +23,7 @@ class DBParams(object):
     password = None
     port = None
     connector = "pymysql"
+    _shard = None
     parameters = {}
     connect_args = {}
 
@@ -33,12 +35,10 @@ class DBConfig(object):
     def __init__(self, env=None, schema=None, bi=False, parameters={}, connect_args={}):
         self._schema = schema
         self._env = env
-        self._bi = bi
         self._connect_args = connect_args
         self._parameters = parameters
 
         self.db_connection = None
-        self.bi_connection = None
 
         self._change_env(env)
         self._proceed()
@@ -49,52 +49,24 @@ class DBConfig(object):
         self._env = env or DEFAULT_ENV
 
     def _load_from_config(self):
+        if CONFIG_PATH is None:
+            raise Exception("CONFIG_PATH is not defined")
+
         path = Path.home() / Path(CONFIG_PATH)
         cred = load_config(path)
         conf = cred[self._env]
-        conf['parameters'] = self._parameters
-        conf['connect_args'] = self._connect_args
+        conf["parameters"] = self._parameters
+        conf["connect_args"] = self._connect_args
         self.db_connection = DBParams(**conf)
 
         conf = cred[self._env]
         conf["schema"] = "samesystem_sisense"
-        conf['parameters'] = self._parameters
-        conf['connect_args'] = self._connect_args
+        conf["parameters"] = self._parameters
+        conf["connect_args"] = self._connect_args
         self.bi_connection = DBParams(**conf)
 
-    def _load_from_env(self):
-        self.db_connection = DBParams(
-            host=os.getenv("DB_HOST"),
-            schema=self._schema or os.getenv("SCHEMA"),
-            login=os.getenv("LOGIN"),
-            password=os.getenv("PASSWORD"),
-            port=os.getenv("DB_PORT"),
-            parameters=self._parameters,
-            connect_args=self._connect_args
-        )
-
-        if self._bi:
-            self.bi_connection = DBParams(
-                host=os.getenv("BI_DB_HOST", os.getenv("BI_DB_HOST_SHARD1")),
-                schema=os.getenv("BI_SCHEMA", os.getenv("BI_SCHEMA", "samesystem_sisense")),
-                login=os.getenv("BI_LOGIN", os.getenv("BI_DB_LOGIN_SHARD1")),
-                password=os.getenv("BI_PASSWORD", os.getenv("BI_DB_PASS_SHARD1")),
-                port=os.getenv("BI_DB_PORT", os.getenv("BI_DB_PORT_SHARD1")),
-                parameters=self._parameters,
-                connect_args=self._connect_args
-            )
-
     def _proceed(self):
-        if CONFIG_PATH:
-            self._load_from_config()
-        else:
-            self._load_from_env()
+        self._load_from_config()
 
     def get_config(self):
         return self.db_connection
-
-    def get_bi_config(self):
-        if not self._bi:
-            raise Exception("BI not enabled")
-
-        return self.bi_connection

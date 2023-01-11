@@ -18,12 +18,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     packages=setuptools.find_packages(),
-    install_requires=[
-        'ruamel.yaml',
-        'sqlalchemy',
-        'pandas',
-        'pymysql'
-    ],
+    install_requires=["ruamel.yaml", "sqlalchemy", "pandas", "pymysql", "pydantic"],
     python_requires=">=3.7",
 )
-
