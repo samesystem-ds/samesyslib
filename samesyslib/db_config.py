@@ -50,7 +50,7 @@ class DBConfig(object):
 
     def _load_from_config(self):
         if CONFIG_PATH is None:
-            raise Exception('CONFIG_PATH is not defined')
+            raise Exception("CONFIG_PATH is not defined")
 
         path = Path.home() / Path(CONFIG_PATH)
         cred = load_config(path)

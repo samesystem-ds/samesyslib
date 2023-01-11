@@ -97,7 +97,7 @@ class ShardsDBClient:
     def combined_get_and_replace(self, sql, conn, table):
         for name, db in self._conns.items():
             result_df = db.get(sql)
-            result_df['_shard'] = name
+            result_df["_shard"] = name
             conn.send_replace(result_df, table=table)
 
     def get_shards_conns(self):
@@ -118,8 +118,4 @@ def execute_sql(engine, sql):
     start_time = time.time()
     engine.execute(sql)
 
-    return {
-        'shard': engine.get_shard(),
-        "duration": time.time() - start_time
-    }
-
+    return {"shard": engine.get_shard(), "duration": time.time() - start_time}
