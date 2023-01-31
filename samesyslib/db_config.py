@@ -1,6 +1,5 @@
 import os
 
-# from enum import Enum
 from pathlib import Path
 
 from samesyslib.utils import load_config
@@ -8,12 +7,6 @@ from samesyslib.utils import load_config
 
 DEFAULT_ENV = os.getenv("DB_ENVIRONMENT", "dev")
 CONFIG_PATH = os.getenv("CONFIG_PATH", None)
-
-
-# class Envs(Enum):
-#     DEV = "dev"
-#     STG = "stg"
-#     PROD = "prod"
 
 
 class DBParams(object):
@@ -44,8 +37,6 @@ class DBConfig(object):
         self._proceed()
 
     def _change_env(self, env):
-        # if env and env not in Envs._value2member_map_:
-        #     raise Exception(f"ERROR: passed env: {env} is not valid")
         self._env = env or DEFAULT_ENV
 
     def _load_from_config(self):
@@ -58,12 +49,6 @@ class DBConfig(object):
         conf["parameters"] = self._parameters
         conf["connect_args"] = self._connect_args
         self.db_connection = DBParams(**conf)
-
-        conf = cred[self._env]
-        conf["schema"] = "samesystem_sisense"
-        conf["parameters"] = self._parameters
-        conf["connect_args"] = self._connect_args
-        self.bi_connection = DBParams(**conf)
 
     def _proceed(self):
         self._load_from_config()
