@@ -3,7 +3,7 @@ from functools import wraps
 from time import time
 import tempfile
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import pandas as pd
 
 from samesyslib.db_config import DBParams
@@ -103,7 +103,7 @@ class DB(POptimiseDataTypesMixin):
     def _check_local_infile(self):
         SQL = "SHOW GLOBAL VARIABLES LIKE 'local_infile';"
         with self.engine.connect() as conn:
-            result = conn.execute(SQL).fetchone()
+            result = conn.execute(text(SQL)).fetchone()
             assert result is not None, "Could not query local_infile"
             assert result[0] == "local_infile", "Check For local_infile value"
             assert result[1] == "ON", "[CL ERROR] local_infile value IS OFF"
