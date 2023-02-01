@@ -1,10 +1,9 @@
-import json
 import logging
 from functools import wraps
 from time import time
 import tempfile
 
-from sqlalchemy import create_engine, engine
+from sqlalchemy import create_engine
 import pandas as pd
 
 from samesyslib.db_config import DBParams
@@ -103,9 +102,11 @@ class DB(POptimiseDataTypesMixin):
 
     def _check_local_infile(self):
         SQL = "SHOW GLOBAL VARIABLES LIKE 'local_infile';"
-        result = self.engine.execute(SQL).fetchone()
-        assert result[0] == "local_infile", "Check For local_infile value"
-        assert result[1] == "ON", "[CL ERROR] local_infile value IS OFF"
+        with self.engine.connect() as conn:
+            result = conn.execute(SQL).fetchone()
+            assert result is not None, "Could not query local_infile"
+            assert result[0] == "local_infile", "Check For local_infile value"
+            assert result[1] == "ON", "[CL ERROR] local_infile value IS OFF"
 
     @timing
     def get(self, query: str = None, **kwargs: dict) -> pd.DataFrame:
@@ -158,7 +159,8 @@ class DB(POptimiseDataTypesMixin):
         if verbose:
             log.info(f"""Executing query:\n{sql}""")
 
-        result = self.engine.execute(sql)
+        with self.engine.connect() as conn:
+            result = conn.execute(sql)
         if verbose:
             log.info(f"Inserted rows:{result.rowcount}")
 
