@@ -117,7 +117,7 @@ class DB(POptimiseDataTypesMixin):
         if verbose:
             log.info(f"Executing query:\n{query}")
         df = self.optimize_pandas_datatypes(
-            pd.read_sql_query(query, self.engine), **kwargs
+            pd.read_sql_query(query, self.engine.connect()), **kwargs
         )
         if verbose:
             log.info(f"Returned table shape: {df.shape}")
@@ -185,9 +185,9 @@ class DB(POptimiseDataTypesMixin):
 
         try:
             with self.engine.connect() as conn:
-                conn.execute(f"USE {schema}")
+                conn.execute(text(f"USE {schema}"))
 
-                if not conn.execute(f'show tables like "{table_name}"'):
+                if not conn.execute(text(f'show tables like "{table_name}"')):
                     create_stmt = pd.io.sql.get_schema(pdf, table_name, con=self.engine)
                     if verbose:
                         log.info(f"Executing query:\n{create_stmt}")
@@ -211,7 +211,7 @@ class DB(POptimiseDataTypesMixin):
                     """
                     if verbose:
                         log.info(f"Executing query:\n{load_stmt}")
-                    rows = conn.execute(load_stmt)
+                    rows = conn.execute(text(load_stmt))
 
         except Exception as e:
             log.error(f"SQL EXCEPTION: {str(e)}")
