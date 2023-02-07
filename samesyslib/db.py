@@ -184,7 +184,7 @@ class DB(POptimiseDataTypesMixin):
         schema = schema or self._schema
 
         try:
-            with self.engine.connect() as conn:
+            with self.engine.begin() as conn:
                 conn.execute(text(f"USE {schema}"))
 
                 if not conn.execute(text(f'show tables like "{table_name}"')):
