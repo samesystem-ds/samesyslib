@@ -308,7 +308,7 @@ class DB(POptimiseDataTypesMixin):
             IGNORE 1 LINES;
             """
             with self.engine.connect() as conn:
-                rows = conn.execute(load_stmt)
+                rows = conn.execute(text(load_stmt))
                 log.info(f"ROWS INSERTED: {rows.rowcount}")
         return f"{schema}.{table}"
 
