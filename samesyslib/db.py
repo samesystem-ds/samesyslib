@@ -307,7 +307,7 @@ class DB(POptimiseDataTypesMixin):
             REPLACE INTO TABLE {schema}.{table} FIELDS TERMINATED BY ',' ENCLOSED BY '\"'
             IGNORE 1 LINES;
             """
-            with self.engine.connect() as conn:
+            with self.engine.begin() as conn:
                 rows = conn.execute(text(load_stmt))
                 log.info(f"ROWS INSERTED: {rows.rowcount}")
         return f"{schema}.{table}"
