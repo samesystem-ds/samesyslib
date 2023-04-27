@@ -90,7 +90,9 @@ class ShardsDBClient:
         combined = []
         for shard_name, results in self.query(sql).items():
             for it in results:
-                row = dict(it) | {"_shard": shard_name}
+                # row = dict(it) | {"_shard": shard_name}
+                row = list(it)
+                row.append(shard_name)
                 combined.append(row)
         return combined
 
