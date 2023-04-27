@@ -13,9 +13,6 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from samesyslib.db import DB
-from samesyslib.db_config import DBParams
-
 ConfigType = Dict[str, Dict[str, Union[str, int]]]
 
 
@@ -49,41 +46,6 @@ def load_config(config_path: Union[str, Path]) -> ConfigType:
 
     with io.open(file=config_path, mode="rt") as config_file:
         return yaml.safe_load(config_file)
-
-
-def get_db_config(db=None, config_path=None):
-    if db is None:
-        db = "db.ds"
-
-    if config_path is None:
-        config_path = os.getenv("config_path")
-
-    if not config_path:
-        raise OSError("config_path variable not set")
-    db_config = load_config(config_path)
-
-    for key in db.split("."):
-        db_config = db_config[key]
-    db_config = db_config["shard1"]
-    return db_config
-
-
-def get_conn(db=None, config_path=None, **kwargs):
-    """Returns connection to the specified (or default) DB with config
-    loaded from YAML (path provided by 'config_path' env var)"""
-    db_config = get_db_config(db, config_path)
-    # Any overrides
-    db_config.update(**kwargs)
-    db_params = DBParams(**db_config)
-    db_conn = DB(db_params)
-    return db_conn
-
-
-def get_conn_string(schema):
-    db_config = get_db_config()
-    conn_string = (f"mysql+pymysql://{db_config['login']}:{db_config['password']}@{db_config['host']}"
-        f":{db_config['port']}/{schema}?charset=utf8mb4")
-    return conn_string
 
 
 def get_config_value(key, value=None, config_path=None):
