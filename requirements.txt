@@ -1,6 +1,6 @@
 # pytest>=6.2.0
 pandas >= 1.0.0
-SQLAlchemy >= 1.0.0
+SQLAlchemy >= 2.0.*
 #ruamel.yaml>=0.16.12
 pydantic==1.*
 pymysql
