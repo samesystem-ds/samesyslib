@@ -1,13 +1,13 @@
-import json
 import logging
 from functools import wraps
 from time import time
 import tempfile
 
-from sqlalchemy import create_engine, engine
+from sqlalchemy import create_engine, text
 import pandas as pd
 
 from samesyslib.db_config import DBParams
+from samesyslib.utils import get_db_config
 
 log = logging.getLogger(__name__)
 # no log by default unless log system gets configured in the main code
@@ -103,9 +103,29 @@ class DB(POptimiseDataTypesMixin):
 
     def _check_local_infile(self):
         SQL = "SHOW GLOBAL VARIABLES LIKE 'local_infile';"
-        result = self.engine.execute(SQL).fetchone()
-        assert result[0] == "local_infile", "Check For local_infile value"
-        assert result[1] == "ON", "[CL ERROR] local_infile value IS OFF"
+        with self.engine.connect() as conn:
+            result = conn.execute(text(SQL)).fetchone()
+            assert result is not None, "Could not query local_infile"
+            assert result[0] == "local_infile", "Check For local_infile value"
+            assert result[1] == "ON", "[CL ERROR] local_infile value IS OFF"
+
+    @staticmethod
+    def get_conn(db=None, config_path=None, **kwargs):
+        """Returns connection to the specified (or default) DB with config
+        loaded from YAML (path provided by 'config_path' env var)"""
+        db_config = get_db_config(db, config_path)
+        # Any overrides
+        db_config.update(**kwargs)
+        db_params = DBParams(**db_config)
+        db_conn = DB(db_params)
+        return db_conn
+    
+    @staticmethod
+    def get_conn_string(schema):
+        db_config = get_db_config()
+        conn_string = (f"mysql+pymysql://{db_config['login']}:{db_config['password']}@{db_config['host']}"
+            f":{db_config['port']}/{schema}?charset=utf8mb4")
+        return conn_string
 
     @timing
     def get(self, query: str = None, **kwargs: dict) -> pd.DataFrame:
@@ -116,7 +136,7 @@ class DB(POptimiseDataTypesMixin):
         if verbose:
             log.info(f"Executing query:\n{query}")
         df = self.optimize_pandas_datatypes(
-            pd.read_sql_query(query, self.engine), **kwargs
+            pd.read_sql_query(query, self.engine.connect()), **kwargs
         )
         if verbose:
             log.info(f"Returned table shape: {df.shape}")
@@ -158,7 +178,8 @@ class DB(POptimiseDataTypesMixin):
         if verbose:
             log.info(f"""Executing query:\n{sql}""")
 
-        result = self.engine.execute(sql)
+        with self.engine.connect() as conn:
+            result = conn.execute(sql)
         if verbose:
             log.info(f"Inserted rows:{result.rowcount}")
 
@@ -182,10 +203,10 @@ class DB(POptimiseDataTypesMixin):
         schema = schema or self._schema
 
         try:
-            with self.engine.connect() as conn:
-                conn.execute(f"USE {schema}")
+            with self.engine.begin() as conn:
+                conn.execute(text(f"USE {schema}"))
 
-                if not conn.execute(f'show tables like "{table_name}"'):
+                if not conn.execute(text(f'show tables like "{table_name}"')):
                     create_stmt = pd.io.sql.get_schema(pdf, table_name, con=self.engine)
                     if verbose:
                         log.info(f"Executing query:\n{create_stmt}")
@@ -209,7 +230,7 @@ class DB(POptimiseDataTypesMixin):
                     """
                     if verbose:
                         log.info(f"Executing query:\n{load_stmt}")
-                    rows = conn.execute(load_stmt)
+                    rows = conn.execute(text(load_stmt))
 
         except Exception as e:
             log.error(f"SQL EXCEPTION: {str(e)}")
@@ -305,8 +326,8 @@ class DB(POptimiseDataTypesMixin):
             REPLACE INTO TABLE {schema}.{table} FIELDS TERMINATED BY ',' ENCLOSED BY '\"'
             IGNORE 1 LINES;
             """
-            with self.engine.connect() as conn:
-                rows = conn.execute(load_stmt)
+            with self.engine.begin() as conn:
+                rows = conn.execute(text(load_stmt))
                 log.info(f"ROWS INSERTED: {rows.rowcount}")
         return f"{schema}.{table}"
 
