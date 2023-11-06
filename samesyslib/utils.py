@@ -42,10 +42,11 @@ def load_config(config_path: Union[str, Path]) -> ConfigType:
 
                 conf['database']['user']
     """
-    from ruamel import yaml
+    from ruamel.yaml import YAML
+    yaml = YAML(typ='safe', pure=True)
 
     with io.open(file=config_path, mode="rt") as config_file:
-        return yaml.safe_load(config_file)
+        return yaml.load(config_file)
 
 
 def get_config_value(key, value=None, config_path=None):
