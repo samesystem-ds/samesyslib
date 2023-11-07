@@ -46,6 +46,23 @@ def load_config(config_path: Union[str, Path]) -> ConfigType:
         return yaml.load(config_file)
 
 
+def get_db_config(db=None, config_path=None, shard="shard1"):
+    if db is None:
+        db = "db.ds"
+
+    if config_path is None:
+        config_path = os.getenv("config_path")
+
+    if not config_path:
+        raise OSError("config_path variable not set")
+    db_config = load_config(config_path)
+
+    for key in db.split("."):
+        db_config = db_config[key]
+    db_config = db_config[shard]
+    return db_config
+
+
 def get_config_value(key, value=None, config_path=None):
     config_path = config_path or os.getenv("config_path")
     config_values = load_config(config_path)

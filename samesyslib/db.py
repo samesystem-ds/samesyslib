@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, text
 import pandas as pd
 
 from samesyslib.db_config import DBParams
+from samesyslib.utils import get_db_config
 
 log = logging.getLogger(__name__)
 # no log by default unless log system gets configured in the main code
@@ -107,6 +108,24 @@ class DB(POptimiseDataTypesMixin):
             assert result is not None, "Could not query local_infile"
             assert result[0] == "local_infile", "Check For local_infile value"
             assert result[1] == "ON", "[CL ERROR] local_infile value IS OFF"
+
+    @staticmethod
+    def get_conn(db=None, config_path=None, **kwargs):
+        """Returns connection to the specified (or default) DB with config
+        loaded from YAML (path provided by 'config_path' env var)"""
+        db_config = get_db_config(db, config_path)
+        # Any overrides
+        db_config.update(**kwargs)
+        db_params = DBParams(**db_config)
+        db_conn = DB(db_params)
+        return db_conn
+    
+    @staticmethod
+    def get_conn_string(schema):
+        db_config = get_db_config()
+        conn_string = (f"mysql+pymysql://{db_config['login']}:{db_config['password']}@{db_config['host']}"
+            f":{db_config['port']}/{schema}?charset=utf8mb4")
+        return conn_string
 
     @timing
     def get(self, query: str = None, **kwargs: dict) -> pd.DataFrame:
