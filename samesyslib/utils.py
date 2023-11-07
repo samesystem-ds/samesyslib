@@ -1,14 +1,12 @@
-# Standard library imports
 import bz2
 import io
 import json
 import os
 import pickle
-from typing import Set, Dict, Union, List
-import sys
+from typing import Dict, Union, List
 from subprocess import check_output, STDOUT
 
-# Third party imports
+from ruamel.yaml import YAML
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -42,10 +40,10 @@ def load_config(config_path: Union[str, Path]) -> ConfigType:
 
                 conf['database']['user']
     """
-    from ruamel import yaml
+    yaml = YAML(typ='safe', pure=True)
 
     with io.open(file=config_path, mode="rt") as config_file:
-        return yaml.safe_load(config_file)
+        return yaml.load(config_file)
 
 
 def get_config_value(key, value=None, config_path=None):
