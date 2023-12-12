@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="samesyslib",
-    version=open("samesyslib/_version.py").readlines()[-1].split()[-1].strip("\"'"),
+    version="0.0.44",
     author="SameSystem",
     author_email="linas.ziedas@samesystem.com",
     description="Common libs used by SameSystem Data Science team.",
