@@ -4,8 +4,7 @@ import io
 import json
 import os
 import pickle
-from typing import Set, Dict, Union, List
-import sys
+from typing import Dict, Union, List
 from subprocess import check_output, STDOUT
 
 # Third party imports

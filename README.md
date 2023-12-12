@@ -1,6 +1,6 @@
 ## Common functions for Data Science
 
-[![Build Status](https://app.travis-ci.com/samesystem-ds/samesyslib.svg?branch=master)](https://app.travis-ci.com/github/samesystem-ds/samesyslib) 
+[![Build Status](https://app.travis-ci.com/samesystem-ds/samesyslib.svg?branch=master)](https://app.travis-ci.com/github/samesystem-ds/samesyslib)
 [![codecov](https://codecov.io/gh/samesystem-ds/samesyslib/branch/master/graph/badge.svg?token=W6fJRyzkU2)](https://codecov.io/gh/samesystem-ds/samesyslib)
 [![PyPI](https://img.shields.io/pypi/v/samesyslib)](https://pypi.org/project/samesyslib/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/samesyslib)](https://pypi.org/project/samesyslib/)
@@ -9,6 +9,9 @@
 [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
 [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![Python 3.9](https://img.shields.io/badge/python-3.9-blue.svg)](https://www.python.org/downloads/release/python-390/)
+[![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/release/python-3100/)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 
 Common libs used by SameSystem Data Science team.
 
@@ -28,7 +31,7 @@ conf = load_config(config_path)
 
 conf['database']['user']
 
-# or 
+# or
 
 from samesyslib.db import DB
 from samesyslib.db_config import DBConfig
@@ -67,7 +70,7 @@ The latest development version can be installed directly from GitHub:
 ```python
 pip install git+https://github.com/samesystem-ds/samesyslib.git
 ```
- 
+
 #### License
 
 Code and documentation are available according to the MIT License
